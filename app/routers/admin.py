@@ -14,6 +14,20 @@ from app.schemas.admin import AdminStatus, FlashCrashResult
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
+def activate_flash_crash_rounds(
+    state: EventState, round_one: Round, round_two: Round, *, now: datetime
+) -> None:
+    round_two_duration = round_two.ends_at - round_two.starts_at
+    round_one.phase = RoundPhase.COMPLETED
+    round_two.phase = RoundPhase.FLASH_CRASH
+    round_two.starts_at = now
+    round_two.ends_at = now + round_two_duration
+    state.current_round_id = round_two.id
+    state.flash_crash_active = True
+    state.flash_crash_message = "Market disruption detected. Download the new dataset."
+    state.state_version += 1
+
+
 def trigger_flash_crash(admin_id: uuid.UUID = Depends(get_current_admin_id), db: Session = Depends(get_db)) -> FlashCrashResult:
     state = db.scalar(select(EventState).where(EventState.id == 1).with_for_update())
     round_one = db.scalar(select(Round).where(Round.round_code == "R1"))
@@ -30,12 +44,7 @@ def trigger_flash_crash(admin_id: uuid.UUID = Depends(get_current_admin_id), db:
     ) or 0
     if assignment_count == 0 or release_count != assignment_count:
         raise HTTPException(status_code=409, detail="Flash Crash datasets are incomplete.")
-    round_one.phase = RoundPhase.COMPLETED
-    round_two.phase = RoundPhase.FLASH_CRASH
-    state.current_round_id = round_two.id
-    state.flash_crash_active = True
-    state.flash_crash_message = "Market disruption detected. Download the new dataset."
-    state.state_version += 1
+    activate_flash_crash_rounds(state, round_one, round_two, now=datetime.now(UTC))
     db.add(AdminAuditLog(admin_id=admin_id, action="TRIGGER_FLASH_CRASH", details={"from": "R1", "to": "R2"}))
     db.commit()
     return FlashCrashResult(current_round="R2", flash_crash_active=True, state_version=state.state_version)

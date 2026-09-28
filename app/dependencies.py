@@ -32,9 +32,17 @@ def get_current_team_id(
     if claims.role != "team":
         raise unauthorized
     token_hash = hashlib.sha256(token.encode()).hexdigest()
-    session = db.scalar(select(AuthSession).where(AuthSession.token_hash == token_hash))
+    row = db.execute(
+        select(AuthSession, Team)
+        .join(Team, Team.id == AuthSession.team_id)
+        .where(AuthSession.token_hash == token_hash)
+    ).one_or_none()
+    if row is None:
+        raise unauthorized
+    session, team = row
     if (
-        session is None
+        session.team_id != team_id
+        or not team.is_active
         or session.revoked_at is not None
         or session.expires_at <= datetime.now(UTC)
     ):

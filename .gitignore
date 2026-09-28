@@ -10,3 +10,4 @@ htmlcov/
 .vscode/
 .superpowers/
 *.egg-info/
+private_data/

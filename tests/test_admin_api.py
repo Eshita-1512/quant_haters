@@ -1,10 +1,12 @@
 import uuid
+from datetime import UTC, datetime, timedelta
+from types import SimpleNamespace
 
 from fastapi.testclient import TestClient
 
 from app.dependencies import get_current_admin_id
 from app.main import create_app
-from app.routers.admin import trigger_flash_crash
+from app.routers.admin import activate_flash_crash_rounds, trigger_flash_crash
 from app.schemas.admin import FlashCrashResult
 
 
@@ -25,3 +27,28 @@ def test_flash_crash_returns_new_round_state() -> None:
     assert response.status_code == 200
     assert response.json()["current_round"] == "R2"
     assert response.json()["flash_crash_active"] is True
+
+
+def test_flash_crash_opens_round_two_immediately_and_preserves_duration() -> None:
+    now = datetime.now(UTC)
+    round_one = SimpleNamespace(phase="live")
+    round_two = SimpleNamespace(
+        phase="scheduled",
+        starts_at=now + timedelta(hours=4),
+        ends_at=now + timedelta(hours=5),
+        id=2,
+    )
+    state = SimpleNamespace(
+        current_round_id=1,
+        flash_crash_active=False,
+        flash_crash_message=None,
+        state_version=7,
+    )
+
+    activate_flash_crash_rounds(state, round_one, round_two, now=now)
+
+    assert round_two.starts_at == now
+    assert round_two.ends_at == now + timedelta(hours=1)
+    assert state.current_round_id == 2
+    assert state.flash_crash_active is True
+    assert state.state_version == 8

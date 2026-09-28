@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     jwt_secret: str = Field(default="development-only-change-me-please", min_length=32)
     jwt_algorithm: str = "HS256"
     access_token_minutes: int = Field(default=60, gt=0)
+    cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
     private_data_dir: Path = Path("private_data")
     master_validation_path: Path = Path("private_data/master_validation.csv")
     max_upload_bytes: int = Field(default=1_000_000, gt=0)
