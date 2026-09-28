@@ -92,6 +92,10 @@ class DatasetRelease(TimestampMixin, Base):
     display_filename: Mapped[str] = mapped_column(String(255))
     storage_key: Mapped[str] = mapped_column(Text)
     sha256: Mapped[str] = mapped_column(String(64))
+    file_size_bytes: Mapped[int] = mapped_column(Integer)
+    row_count: Mapped[int | None] = mapped_column(Integer)
+    available_from: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    available_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
 

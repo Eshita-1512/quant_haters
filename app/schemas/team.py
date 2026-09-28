@@ -15,3 +15,8 @@ class TeamProfile(BaseModel):
     predict_start: int
     predict_end: int
 
+
+class DatasetDownload(BaseModel):
+    filename: str
+    download_url: str
+    expires_in_seconds: int
