@@ -111,9 +111,12 @@ class Submission(TimestampMixin, Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     team_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("teams.id"))
     round_id: Mapped[int] = mapped_column(ForeignKey("rounds.id"))
+    stock_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("stocks.id"))
     assignment_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("team_assignments.id"))
     original_filename: Mapped[str] = mapped_column(String(255))
     file_hash: Mapped[str] = mapped_column(String(64))
+    file_size_bytes: Mapped[int] = mapped_column(Integer)
+    row_count: Mapped[int | None] = mapped_column(Integer)
     status: Mapped[SubmissionStatus] = mapped_column(Enum(SubmissionStatus), default=SubmissionStatus.UPLOADED)
     validation_error: Mapped[str | None] = mapped_column(Text)
 
@@ -141,10 +144,12 @@ class Score(TimestampMixin, Base):
     submission_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("submissions.id"), unique=True)
     team_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("teams.id"))
     round_id: Mapped[int] = mapped_column(ForeignKey("rounds.id"))
+    stock_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("stocks.id"))
     score: Mapped[Decimal] = mapped_column(Numeric(12, 6))
     is_valid: Mapped[bool] = mapped_column(Boolean, default=True)
     balanced_accuracy: Mapped[Decimal | None] = mapped_column(Numeric(8, 6))
     mcc: Mapped[Decimal | None] = mapped_column(Numeric(8, 6))
+    scoring_version: Mapped[str] = mapped_column(String(100), default="v1")
     details: Mapped[dict | None] = mapped_column(JSONB)
 
 
