@@ -1,4 +1,5 @@
 import uuid
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
 import jwt
@@ -8,6 +9,17 @@ from app.config import get_settings
 
 
 password_hash = PasswordHash.recommended()
+
+
+class InvalidTokenError(ValueError):
+    pass
+
+
+@dataclass(frozen=True)
+class TokenClaims:
+    subject: str
+    role: str
+    jti: str
 
 
 def hash_password(password: str) -> str:
@@ -29,3 +41,16 @@ def create_access_token(*, subject: str, role: str) -> str:
         "exp": issued_at + timedelta(minutes=settings.access_token_minutes),
     }
     return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
+
+
+def decode_access_token(token: str) -> TokenClaims:
+    settings = get_settings()
+    try:
+        payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
+        return TokenClaims(
+            subject=str(payload["sub"]),
+            role=str(payload["role"]),
+            jti=str(payload["jti"]),
+        )
+    except (jwt.InvalidTokenError, KeyError, TypeError, ValueError) as exc:
+        raise InvalidTokenError("Invalid or expired access token.") from exc
