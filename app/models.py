@@ -71,7 +71,7 @@ class Round(TimestampMixin, Base):
 
 class TeamAssignment(TimestampMixin, Base):
     __tablename__ = "team_assignments"
-    __table_args__ = (UniqueConstraint("team_id", "round_id"), UniqueConstraint("id", "round_id"), CheckConstraint("train_end >= train_start"), CheckConstraint("predict_end >= predict_start"))
+    __table_args__ = (UniqueConstraint("team_id", "round_id"), UniqueConstraint("id", "round_id", name="uq_team_assignments_id_round_id"), CheckConstraint("train_end >= train_start"), CheckConstraint("predict_end >= predict_start"))
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     team_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("teams.id"))
     round_id: Mapped[int] = mapped_column(ForeignKey("rounds.id"))
@@ -88,6 +88,7 @@ class DatasetRelease(TimestampMixin, Base):
         ForeignKeyConstraint(
             ["assignment_id", "round_id"],
             ["team_assignments.id", "team_assignments.round_id"],
+            name="fk_dataset_releases_assignment_round",
         ),
     )
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

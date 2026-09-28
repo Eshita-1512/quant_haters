@@ -7,7 +7,7 @@ from app import models  # noqa: F401
 
 def test_initial_migration_is_single_head() -> None:
     scripts = ScriptDirectory.from_config(Config("alembic.ini"))
-    assert scripts.get_heads() == ["0001_initial_schema"]
+    assert scripts.get_heads() == ["0002_assignment_round_integrity"]
 
 
 def test_metadata_contains_all_approved_tables() -> None:
