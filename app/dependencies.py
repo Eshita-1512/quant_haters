@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import AuthSession, EventState, Stock, Team, TeamAssignment
+from app.models import AdminUser, AuthSession, EventState, Stock, Team, TeamAssignment
 from app.schemas.team import StockInfo, TeamProfile
 from app.security import InvalidTokenError, decode_access_token
 
@@ -42,6 +42,23 @@ def get_current_team_id(
     return team_id
 
 
+def get_current_admin_id(
+    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
+) -> uuid.UUID:
+    unauthorized = HTTPException(status_code=401, detail="Administrator authorization required.")
+    try:
+        claims = decode_access_token(token)
+        admin_id = uuid.UUID(claims.subject)
+    except (InvalidTokenError, ValueError):
+        raise unauthorized from None
+    if claims.role != "admin":
+        raise unauthorized
+    admin = db.scalar(select(AdminUser).where(AdminUser.id == admin_id, AdminUser.is_active.is_(True)))
+    if admin is None:
+        raise unauthorized
+    return admin_id
+
+
 def get_current_team_profile(
     team_id: uuid.UUID = Depends(get_current_team_id), db: Session = Depends(get_db)
 ) -> TeamProfile:
@@ -65,4 +82,3 @@ def get_current_team_profile(
         predict_start=assignment.predict_start,
         predict_end=assignment.predict_end,
     )
-
