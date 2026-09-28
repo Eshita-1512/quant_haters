@@ -1,8 +1,11 @@
 from fastapi import FastAPI
 
+from app.routers.auth import router as auth_router
+
 
 def create_app() -> FastAPI:
     app = FastAPI(title="Quant Challenge API", version="1.0.0")
+    app.include_router(auth_router, prefix="/api/v1")
 
     @app.get("/health", tags=["health"])
     def health() -> dict[str, str]:
