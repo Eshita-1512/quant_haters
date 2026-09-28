@@ -48,3 +48,18 @@ def test_round_three_accepts_signal_boundaries() -> None:
 def test_invalid_prediction_csv_is_rejected(content: bytes, message: str) -> None:
     with pytest.raises(SubmissionValidationError, match=message):
         validate_submission_csv(content, round_number=1)
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        prediction_csv().replace(b"1,1", b"1", 1),
+        prediction_csv().replace(b"1,1", b"1,1,unexpected", 1),
+        prediction_csv().replace(
+            b"timestamp,prediction", b"timestamp,prediction,prediction", 1
+        ),
+    ],
+)
+def test_malformed_csv_shape_is_a_safe_validation_error(content: bytes) -> None:
+    with pytest.raises(SubmissionValidationError):
+        validate_submission_csv(content, round_number=1)

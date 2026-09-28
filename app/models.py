@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, CheckConstraint, DateTime, Enum, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint, func
+from sqlalchemy import Boolean, CheckConstraint, DateTime, Enum, ForeignKey, ForeignKeyConstraint, Integer, Numeric, String, Text, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -71,7 +71,7 @@ class Round(TimestampMixin, Base):
 
 class TeamAssignment(TimestampMixin, Base):
     __tablename__ = "team_assignments"
-    __table_args__ = (UniqueConstraint("team_id", "round_id"), CheckConstraint("train_end >= train_start"), CheckConstraint("predict_end >= predict_start"))
+    __table_args__ = (UniqueConstraint("team_id", "round_id"), UniqueConstraint("id", "round_id"), CheckConstraint("train_end >= train_start"), CheckConstraint("predict_end >= predict_start"))
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     team_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("teams.id"))
     round_id: Mapped[int] = mapped_column(ForeignKey("rounds.id"))
@@ -84,8 +84,14 @@ class TeamAssignment(TimestampMixin, Base):
 
 class DatasetRelease(TimestampMixin, Base):
     __tablename__ = "dataset_releases"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["assignment_id", "round_id"],
+            ["team_assignments.id", "team_assignments.round_id"],
+        ),
+    )
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    assignment_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("team_assignments.id"))
+    assignment_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
     round_id: Mapped[int] = mapped_column(ForeignKey("rounds.id"))
     release_type: Mapped[str] = mapped_column(String(20))
     version: Mapped[int] = mapped_column(Integer, default=1)

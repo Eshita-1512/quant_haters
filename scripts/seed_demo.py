@@ -43,7 +43,7 @@ def _write_master_validation(path: Path, stock_codes: list[str]) -> None:
         writer = csv.writer(handle)
         writer.writerow(["stock_id", "master_timestamp", "target_r1r2", "target_r3"])
         for stock_index, stock_code in enumerate(stock_codes):
-            for timestamp in range(1, 2001):
+            for timestamp in range(1, 3001):
                 direction = 1 if (timestamp + stock_index) % 2 else 0
                 market_return = "0.0100" if direction else "-0.0080"
                 writer.writerow([stock_code, timestamp, direction, market_return])

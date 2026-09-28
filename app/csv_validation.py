@@ -21,10 +21,10 @@ class SignalInput:
     signal: Decimal
 
 
-def _decimal(value: str, row_number: int) -> Decimal:
+def _decimal(value: str | None, row_number: int) -> Decimal:
     try:
         number = Decimal(value)
-    except (InvalidOperation, ValueError):
+    except (InvalidOperation, TypeError, ValueError):
         raise SubmissionValidationError(f"Row {row_number}: non-numeric value found.") from None
     if not number.is_finite():
         raise SubmissionValidationError(f"Row {row_number}: non-numeric value found.")
@@ -41,6 +41,8 @@ def validate_submission_csv(content: bytes, *, round_number: int) -> list[Predic
     expected = {"timestamp", "signal"} if round_number == 3 else {"timestamp", "prediction"}
     allowed = expected if round_number == 3 else expected | {"confidence"}
     headers = reader.fieldnames or []
+    if len(headers) != len(set(headers)):
+        raise SubmissionValidationError("Invalid CSV schema")
     if not expected.issubset(headers):
         missing = sorted(expected - set(headers))
         raise SubmissionValidationError(f"Missing columns: {', '.join(missing)}")
@@ -54,6 +56,8 @@ def validate_submission_csv(content: bytes, *, round_number: int) -> list[Predic
     result: list[PredictionInput | SignalInput] = []
     seen: set[int] = set()
     for row_number, row in enumerate(raw_rows, start=1):
+        if None in row or any(row.get(column) is None for column in expected):
+            raise SubmissionValidationError(f"Row {row_number}: invalid number of columns.")
         try:
             timestamp = int(row["timestamp"])
         except (TypeError, ValueError):
