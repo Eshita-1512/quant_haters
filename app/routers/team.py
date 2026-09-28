@@ -1,8 +1,11 @@
 import time
 import uuid
+from dataclasses import dataclass
 from datetime import UTC, datetime
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import FileResponse
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
@@ -10,10 +13,22 @@ from app.database import get_db
 from app.dependencies import get_current_team_id, get_current_team_profile
 from app.models import DatasetRelease, DownloadEvent, EventState, TeamAssignment
 from app.schemas.team import DatasetDownload, TeamProfile
-from app.services.datasets import create_download_signature
+from app.config import get_settings
+from app.services.datasets import (
+    UnsafeStorageKeyError,
+    create_download_signature,
+    resolve_storage_path,
+    verify_download_signature,
+)
 
 
 router = APIRouter(prefix="/team", tags=["team"])
+
+
+@dataclass(frozen=True)
+class DownloadFile:
+    path: Path
+    filename: str
 
 
 @router.get("/me", response_model=TeamProfile)
@@ -57,3 +72,38 @@ def get_download_response(
 @router.get("/data", response_model=DatasetDownload)
 def team_data(download: DatasetDownload = Depends(get_download_response)) -> DatasetDownload:
     return download
+
+
+def get_download_file_response(
+    release_id: uuid.UUID,
+    expires: int,
+    signature: str,
+    db: Session = Depends(get_db),
+) -> DownloadFile:
+    if not verify_download_signature(release_id, expires, signature):
+        raise HTTPException(status_code=403, detail="Download link is invalid or expired.")
+
+    now = datetime.now(UTC)
+    release = db.scalar(
+        select(DatasetRelease).where(
+            DatasetRelease.id == release_id,
+            DatasetRelease.is_active.is_(True),
+            DatasetRelease.available_from <= now,
+            or_(DatasetRelease.available_until.is_(None), DatasetRelease.available_until > now),
+        )
+    )
+    if release is None:
+        raise HTTPException(status_code=404, detail="Dataset is not available.")
+
+    try:
+        path = resolve_storage_path(get_settings().private_data_dir, release.storage_key)
+    except UnsafeStorageKeyError as exc:
+        raise HTTPException(status_code=404, detail="Dataset is not available.") from exc
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Dataset file is missing.")
+    return DownloadFile(path=path, filename=release.display_filename)
+
+
+@router.get("/data/file", response_class=FileResponse)
+def team_data_file(download: DownloadFile = Depends(get_download_file_response)) -> FileResponse:
+    return FileResponse(download.path, filename=download.filename, media_type="text/csv")

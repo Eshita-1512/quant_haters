@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 from app.dependencies import get_current_team_id
 from app.main import create_app
 from app.schemas.submission import SubmissionResult
+from app.csv_validation import SubmissionValidationError
 
 
 def test_submit_returns_frozen_success_contract(monkeypatch) -> None:
@@ -32,3 +33,25 @@ def test_submit_returns_frozen_success_contract(monkeypatch) -> None:
     assert response.json()["status"] == "success"
     assert response.json()["submission_number"] == 3
     assert response.json()["submissions_remaining"] == 7
+
+
+def test_submit_returns_frozen_error_contract_without_detail_wrapper(monkeypatch) -> None:
+    async def reject_submission(**_kwargs):
+        raise SubmissionValidationError("Expected 50 rows, got 49.")
+
+    monkeypatch.setattr("app.routers.submissions.process_submission", reject_submission)
+    app = create_app()
+    app.dependency_overrides[get_current_team_id] = lambda: uuid.uuid4()
+
+    response = TestClient(app).post(
+        "/api/v1/submit/round/1",
+        headers={"Authorization": "Bearer test"},
+        files={"file": ("predictions.csv", b"timestamp,prediction\n", "text/csv")},
+    )
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "status": "error",
+        "code": 400,
+        "message": "Expected 50 rows, got 49.",
+    }
