@@ -79,3 +79,19 @@ def test_login_rejects_inactive_team() -> None:
         json={"team_id": "A01", "password": "correct-password"},
     )
     assert response.status_code == 401
+
+
+def test_admin_login_returns_admin_jwt(monkeypatch) -> None:
+    admin = SimpleNamespace(
+        id=uuid.uuid4(),
+        username="organizer",
+        password_hash=hash_password("admin-password"),
+        is_active=True,
+    )
+    client, _ = make_client(admin)
+    response = client.post(
+        "/api/v1/auth/admin/login",
+        json={"username": "organizer", "password": "admin-password"},
+    )
+    assert response.status_code == 200
+    assert response.json()["access_token"]
