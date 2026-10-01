@@ -4,6 +4,7 @@ from app.models import (
     LeaderboardSnapshotEntry,
     PredictionRow,
     SignalRow,
+    SubmissionRateLimit,
     TeamAssignment,
 )
 
@@ -41,3 +42,8 @@ def test_leaderboard_snapshot_models_freeze_rank_and_submission_count() -> None:
         "score",
         "submissions",
     } <= set(LeaderboardSnapshotEntry.__table__.columns.keys())
+
+
+def test_submission_rate_limit_has_one_row_per_team() -> None:
+    assert SubmissionRateLimit.__table__.primary_key.columns.keys() == ["team_id"]
+    assert "last_attempt_at" in SubmissionRateLimit.__table__.columns

@@ -203,3 +203,11 @@ class LeaderboardSnapshotEntry(Base):
     team_name: Mapped[str] = mapped_column(String(150))
     score: Mapped[Decimal] = mapped_column(Numeric(12, 6))
     submissions: Mapped[int] = mapped_column(Integer)
+
+
+class SubmissionRateLimit(Base):
+    __tablename__ = "submission_rate_limits"
+    team_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("teams.id", ondelete="CASCADE"), primary_key=True
+    )
+    last_attempt_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

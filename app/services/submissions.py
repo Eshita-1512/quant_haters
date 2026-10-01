@@ -1,18 +1,57 @@
 import csv
 import hashlib
+import math
 import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
 
 from fastapi import UploadFile
 from sqlalchemy import func, select
+from sqlalchemy.dialects.postgresql import insert as postgresql_insert
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.csv_validation import PredictionInput, SignalInput, SubmissionValidationError, validate_submission_csv
-from app.models import EventState, PredictionRow, Round, Score, SignalRow, Stock, Submission, SubmissionStatus, Team, TeamAssignment
+from app.models import EventState, PredictionRow, Round, Score, SignalRow, Stock, Submission, SubmissionRateLimit, SubmissionStatus, Team, TeamAssignment
 from app.schemas.submission import SubmissionResult
 from app.services.scoring import score_binary, score_signals
+
+
+class SubmissionRateLimitError(Exception):
+    def __init__(self, retry_after_seconds: int) -> None:
+        super().__init__("Only one submission is allowed every 60 seconds.")
+        self.retry_after_seconds = retry_after_seconds
+
+
+def rate_limit_retry_after(last_attempt_at: datetime, now: datetime) -> int:
+    elapsed = (now - last_attempt_at).total_seconds()
+    return max(0, math.ceil(60 - elapsed))
+
+
+def enforce_submission_rate_limit(db: Session, team_id: uuid.UUID, now: datetime) -> None:
+    created_team_id = db.execute(
+        postgresql_insert(SubmissionRateLimit)
+        .values(team_id=team_id, last_attempt_at=now)
+        .on_conflict_do_nothing(index_elements=[SubmissionRateLimit.team_id])
+        .returning(SubmissionRateLimit.team_id)
+    ).scalar_one_or_none()
+    if created_team_id is not None:
+        db.commit()
+        return
+
+    limiter = db.scalar(
+        select(SubmissionRateLimit)
+        .where(SubmissionRateLimit.team_id == team_id)
+        .with_for_update()
+    )
+    if limiter is None:
+        raise RuntimeError("Submission rate limiter could not be initialized.")
+    retry_after = rate_limit_retry_after(limiter.last_attempt_at, now)
+    if retry_after:
+        db.rollback()
+        raise SubmissionRateLimitError(retry_after)
+    limiter.last_attempt_at = now
+    db.commit()
 
 
 def _validation_targets(
@@ -32,12 +71,13 @@ def _validation_targets(
 
 
 async def process_submission(*, file: UploadFile, round_number: int, team_id: uuid.UUID, db: Session) -> SubmissionResult:
+    now = datetime.now(UTC)
+    enforce_submission_rate_limit(db, team_id, now)
     if not file.filename or not file.filename.lower().endswith(".csv"):
         raise SubmissionValidationError("Only .csv files are accepted.")
     content = await file.read(get_settings().max_upload_bytes + 1)
     if len(content) > get_settings().max_upload_bytes:
         raise SubmissionValidationError("CSV file is too large.")
-    now = datetime.now(UTC)
     statement = (
         select(Team, Round, TeamAssignment, Stock)
         .join(EventState, EventState.id == 1)
@@ -78,4 +118,4 @@ async def process_submission(*, file: UploadFile, round_number: int, team_id: uu
     db.add(score)
     submission.status = SubmissionStatus.SCORED
     db.commit()
-    return SubmissionResult(team_id=team.team_code, round=round_number, score=float(score.score), balanced_accuracy=balanced_accuracy, mcc=mcc, submission_number=count + 1, submissions_remaining=round_.max_submissions_per_team - count - 1)
+    return SubmissionResult(team_id=team.team_code, round=round_number, submission_number=count + 1, submissions_remaining=round_.max_submissions_per_team - count - 1)

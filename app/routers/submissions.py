@@ -8,7 +8,7 @@ from app.csv_validation import SubmissionValidationError
 from app.database import get_db
 from app.dependencies import get_current_team_id
 from app.schemas.submission import SubmissionResult
-from app.services.submissions import process_submission
+from app.services.submissions import SubmissionRateLimitError, process_submission
 
 
 router = APIRouter(prefix="/submit", tags=["submissions"])
@@ -23,4 +23,15 @@ async def submit_round(round_num: int, file: UploadFile = File(...), team_id: uu
         return JSONResponse(
             status_code=400,
             content={"status": "error", "code": 400, "message": str(exc)},
+        )
+    except SubmissionRateLimitError as exc:
+        return JSONResponse(
+            status_code=429,
+            headers={"Retry-After": str(exc.retry_after_seconds)},
+            content={
+                "status": "error",
+                "code": 429,
+                "message": str(exc),
+                "retry_after_seconds": exc.retry_after_seconds,
+            },
         )

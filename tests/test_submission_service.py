@@ -1,7 +1,8 @@
 from pathlib import Path
 from types import SimpleNamespace
+from datetime import UTC, datetime, timedelta
 
-from app.services.submissions import _validation_targets
+from app.services.submissions import _validation_targets, rate_limit_retry_after
 
 
 def test_validation_targets_are_selected_by_team_and_stock(
@@ -23,3 +24,13 @@ def test_validation_targets_are_selected_by_team_and_stock(
 
     assert team_one == [0] * 50
     assert team_two == [1] * 50
+
+
+def test_rate_limit_reports_remaining_seconds_inside_window() -> None:
+    now = datetime.now(UTC)
+    assert rate_limit_retry_after(now - timedelta(seconds=18), now) == 42
+
+
+def test_rate_limit_allows_request_after_window() -> None:
+    now = datetime.now(UTC)
+    assert rate_limit_retry_after(now - timedelta(seconds=60), now) == 0
