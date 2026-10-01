@@ -23,27 +23,39 @@ class SubmissionRateLimitError(Exception):
         self.retry_after_seconds = retry_after_seconds
 
 
+class ValidationDataError(RuntimeError):
+    """Raised when server-owned scoring data cannot safely score a submission."""
+
+
 def rate_limit_retry_after(last_attempt_at: datetime, now: datetime) -> int:
     elapsed = (now - last_attempt_at).total_seconds()
     return max(0, math.ceil(60 - elapsed))
 
 
-def enforce_submission_rate_limit(db: Session, team_id: uuid.UUID, now: datetime) -> None:
-    created_team_id = db.execute(
+def _rate_limit_insert_statement(team_id: uuid.UUID, now: datetime):
+    return (
         postgresql_insert(SubmissionRateLimit)
         .values(team_id=team_id, last_attempt_at=now)
         .on_conflict_do_nothing(index_elements=[SubmissionRateLimit.team_id])
         .returning(SubmissionRateLimit.team_id)
-    ).scalar_one_or_none()
-    if created_team_id is not None:
-        db.commit()
-        return
+    )
 
-    limiter = db.scalar(
+
+def _rate_limit_row_statement(team_id: uuid.UUID):
+    return (
         select(SubmissionRateLimit)
         .where(SubmissionRateLimit.team_id == team_id)
         .with_for_update()
     )
+
+
+def enforce_submission_rate_limit(db: Session, team_id: uuid.UUID, now: datetime) -> None:
+    created_team_id = db.execute(_rate_limit_insert_statement(team_id, now)).scalar_one_or_none()
+    if created_team_id is not None:
+        db.commit()
+        return
+
+    limiter = db.scalar(_rate_limit_row_statement(team_id))
     if limiter is None:
         raise RuntimeError("Submission rate limiter could not be initialized.")
     retry_after = rate_limit_retry_after(limiter.last_attempt_at, now)
@@ -59,15 +71,32 @@ def _validation_targets(
 ) -> list[int] | list[Decimal]:
     path = get_settings().master_validation_path
     if not path.is_file():
-        raise RuntimeError("Master validation data is unavailable.")
-    by_timestamp: dict[int, dict[str, str]] = {}
-    with path.open(newline="", encoding="utf-8") as handle:
-        for row in csv.DictReader(handle):
-            if row["team_id"] == team_code and row["stock_id"] == stock_code:
-                by_timestamp[int(row["master_timestamp"])] = row
+        raise ValidationDataError("Master validation data is unavailable.")
     column = "target_r3" if round_number == 3 else "target_r1r2"
-    values = [by_timestamp[start + offset][column] for offset in range(50)]
-    return [Decimal(value) for value in values] if round_number == 3 else [int(value) for value in values]
+    required = {"team_id", "stock_id", "master_timestamp", column}
+    try:
+        by_timestamp: dict[int, dict[str, str]] = {}
+        with path.open(newline="", encoding="utf-8") as handle:
+            reader = csv.DictReader(handle)
+            if not required <= set(reader.fieldnames or []):
+                raise ValidationDataError("Master validation data has an invalid schema.")
+            for row in reader:
+                if row["team_id"] == team_code and row["stock_id"] == stock_code:
+                    by_timestamp[int(row["master_timestamp"])] = row
+        values = [by_timestamp[start + offset][column] for offset in range(50)]
+        return (
+            [Decimal(value) for value in values]
+            if round_number == 3
+            else [int(value) for value in values]
+        )
+    except ValidationDataError:
+        raise
+    except KeyError as exc:
+        raise ValidationDataError(
+            "Validation targets are unavailable for this team window."
+        ) from exc
+    except (ArithmeticError, OSError, TypeError, ValueError) as exc:
+        raise ValidationDataError("Master validation data is invalid.") from exc
 
 
 async def process_submission(*, file: UploadFile, round_number: int, team_id: uuid.UUID, db: Session) -> SubmissionResult:

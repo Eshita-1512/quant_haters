@@ -1,6 +1,7 @@
 from pathlib import Path
 from decimal import Decimal
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.dependencies import get_current_admin_id
@@ -8,6 +9,7 @@ from app.main import create_app
 from app.routers.admin import get_final_backtest
 from app.schemas.admin import FinalBacktestEntry, FinalBacktestResult
 from app.services.final_backtest import load_hidden_targets
+from app.services.final_backtest import BacktestCandidate, select_best_candidates
 
 
 def test_hidden_targets_are_filtered_by_team_and_stock(tmp_path: Path) -> None:
@@ -54,3 +56,37 @@ def test_final_backtest_returns_ranked_winners() -> None:
         "team": "Team A",
         "score": 2.14,
     }
+
+
+def test_best_r3_submission_is_selected_for_every_active_team() -> None:
+    import uuid
+    from decimal import Decimal
+
+    team_one = uuid.uuid4()
+    team_two = uuid.uuid4()
+    candidates = [
+        BacktestCandidate(uuid.uuid4(), team_one, "T01", "Team 1", "STOCK_A", 801, Decimal("0.2")),
+        BacktestCandidate(uuid.uuid4(), team_one, "T01", "Team 1", "STOCK_A", 801, Decimal("0.9")),
+        BacktestCandidate(uuid.uuid4(), team_two, "T02", "Team 2", "STOCK_B", 801, Decimal("0.5")),
+    ]
+
+    selected = select_best_candidates(candidates, {team_one, team_two})
+
+    assert [candidate.normal_score for candidate in selected] == [
+        Decimal("0.9"),
+        Decimal("0.5"),
+    ]
+
+
+def test_final_backtest_rejects_partial_active_team_coverage() -> None:
+    import uuid
+    from decimal import Decimal
+
+    team_one = uuid.uuid4()
+    team_two = uuid.uuid4()
+    candidates = [
+        BacktestCandidate(uuid.uuid4(), team_one, "T01", "Team 1", "STOCK_A", 801, Decimal("0.9"))
+    ]
+
+    with pytest.raises(ValueError, match="missing a valid R3 submission"):
+        select_best_candidates(candidates, {team_one, team_two})

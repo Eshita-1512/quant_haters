@@ -31,3 +31,11 @@ def test_post_baseline_table_migrations_are_safe_for_fresh_databases() -> None:
     ):
         source = (Path("alembic/versions") / filename).read_text(encoding="utf-8")
         assert "CREATE TABLE IF NOT EXISTS" in source
+
+
+def test_baseline_downgrade_drops_only_original_tables() -> None:
+    source = Path("alembic/versions/0001_initial_schema.py").read_text(
+        encoding="utf-8"
+    )
+    assert "ORIGINAL_TABLE_NAMES" in source
+    assert "Base.metadata.drop_all" not in source

@@ -8,7 +8,11 @@ from app.csv_validation import SubmissionValidationError
 from app.database import get_db
 from app.dependencies import get_current_team_id
 from app.schemas.submission import SubmissionResult
-from app.services.submissions import SubmissionRateLimitError, process_submission
+from app.services.submissions import (
+    SubmissionRateLimitError,
+    ValidationDataError,
+    process_submission,
+)
 
 
 router = APIRouter(prefix="/submit", tags=["submissions"])
@@ -33,5 +37,15 @@ async def submit_round(round_num: int, file: UploadFile = File(...), team_id: uu
                 "code": 429,
                 "message": str(exc),
                 "retry_after_seconds": exc.retry_after_seconds,
+            },
+        )
+    except ValidationDataError:
+        db.rollback()
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "error",
+                "code": 503,
+                "message": "Scoring validation data is unavailable.",
             },
         )

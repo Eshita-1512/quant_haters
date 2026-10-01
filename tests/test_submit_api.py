@@ -81,3 +81,27 @@ def test_submit_returns_rate_limit_contract(monkeypatch) -> None:
         "message": "Only one submission is allowed every 60 seconds.",
         "retry_after_seconds": 42,
     }
+
+
+def test_submit_returns_controlled_validation_configuration_error(monkeypatch) -> None:
+    from app.services.submissions import ValidationDataError
+
+    async def reject_submission(**_kwargs):
+        raise ValidationDataError("Validation targets are unavailable for this team window.")
+
+    monkeypatch.setattr("app.routers.submissions.process_submission", reject_submission)
+    app = create_app()
+    app.dependency_overrides[get_current_team_id] = lambda: uuid.uuid4()
+
+    response = TestClient(app).post(
+        "/api/v1/submit/round/1",
+        headers={"Authorization": "Bearer test"},
+        files={"file": ("predictions.csv", b"timestamp,prediction\n", "text/csv")},
+    )
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "status": "error",
+        "code": 503,
+        "message": "Scoring validation data is unavailable.",
+    }
