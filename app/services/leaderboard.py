@@ -1,0 +1,119 @@
+import uuid
+from decimal import Decimal
+
+from fastapi import HTTPException
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session
+
+from app.models import (
+    AdminAuditLog,
+    EventState,
+    LeaderboardSnapshot,
+    LeaderboardSnapshotEntry,
+    Score,
+    Submission,
+    Team,
+)
+from app.schemas.leaderboard import LeaderboardEntry, SnapshotResult
+
+
+def _live_rows(db: Session) -> tuple[int | None, list[tuple[uuid.UUID, str, Decimal, int]]]:
+    round_id = db.scalar(select(EventState.current_round_id).where(EventState.id == 1))
+    if round_id is None:
+        return None, []
+
+    best_scores = (
+        select(Score.team_id, func.max(Score.score).label("best_score"))
+        .where(Score.round_id == round_id, Score.is_valid.is_(True))
+        .group_by(Score.team_id)
+        .subquery()
+    )
+    submission_counts = (
+        select(Submission.team_id, func.count(Submission.id).label("submission_count"))
+        .where(Submission.round_id == round_id)
+        .group_by(Submission.team_id)
+        .subquery()
+    )
+    statement = (
+        select(
+            Team.id,
+            Team.team_name,
+            best_scores.c.best_score,
+            func.coalesce(submission_counts.c.submission_count, 0),
+        )
+        .join(best_scores, best_scores.c.team_id == Team.id)
+        .outerjoin(submission_counts, submission_counts.c.team_id == Team.id)
+        .where(Team.is_active.is_(True))
+        .order_by(best_scores.c.best_score.desc(), Team.team_name.asc())
+    )
+    return round_id, list(db.execute(statement).all())
+
+
+def live_leaderboard(db: Session) -> list[LeaderboardEntry]:
+    _, rows = _live_rows(db)
+    return [
+        LeaderboardEntry(
+            rank=rank,
+            team=team_name,
+            score=score,
+            submissions=submissions,
+        )
+        for rank, (_team_id, team_name, score, submissions) in enumerate(rows, start=1)
+    ]
+
+
+def public_leaderboard(db: Session) -> list[LeaderboardEntry]:
+    snapshot_id = db.scalar(
+        select(LeaderboardSnapshot.id)
+        .order_by(LeaderboardSnapshot.created_at.desc(), LeaderboardSnapshot.id.desc())
+        .limit(1)
+    )
+    if snapshot_id is None:
+        return []
+    rows = db.execute(
+        select(LeaderboardSnapshotEntry)
+        .where(LeaderboardSnapshotEntry.snapshot_id == snapshot_id)
+        .order_by(LeaderboardSnapshotEntry.rank)
+    ).scalars()
+    return [
+        LeaderboardEntry(
+            rank=row.rank,
+            team=row.team_name,
+            score=row.score,
+            submissions=row.submissions,
+        )
+        for row in rows
+    ]
+
+
+def publish_snapshot(db: Session, admin_id: uuid.UUID) -> SnapshotResult:
+    round_id, rows = _live_rows(db)
+    if round_id is None:
+        raise HTTPException(status_code=409, detail="No active round is configured.")
+    snapshot = LeaderboardSnapshot(
+        round_id=round_id, published_by_admin_id=admin_id
+    )
+    db.add(snapshot)
+    db.flush()
+    db.add_all(
+        [
+            LeaderboardSnapshotEntry(
+                snapshot_id=snapshot.id,
+                rank=rank,
+                team_id=team_id,
+                team_name=team_name,
+                score=score,
+                submissions=submissions,
+            )
+            for rank, (team_id, team_name, score, submissions) in enumerate(rows, start=1)
+        ]
+    )
+    db.add(
+        AdminAuditLog(
+            admin_id=admin_id,
+            action="PUBLISH_LEADERBOARD_SNAPSHOT",
+            details={"snapshot_id": str(snapshot.id), "round_id": round_id, "entries": len(rows)},
+        )
+    )
+    db.commit()
+    return SnapshotResult(snapshot_id=str(snapshot.id), entries=len(rows))

@@ -1,4 +1,11 @@
-from app.models import DatasetRelease, PredictionRow, SignalRow, TeamAssignment
+from app.models import (
+    DatasetRelease,
+    LeaderboardSnapshot,
+    LeaderboardSnapshotEntry,
+    PredictionRow,
+    SignalRow,
+    TeamAssignment,
+)
 
 
 def test_assignment_exposes_team_windows() -> None:
@@ -20,3 +27,17 @@ def test_dataset_release_round_must_match_assignment_round() -> None:
         for constraint in DatasetRelease.__table__.foreign_key_constraints
     }
     assert ("team_assignments.id", "team_assignments.round_id") in targets
+
+
+def test_leaderboard_snapshot_models_freeze_rank_and_submission_count() -> None:
+    assert {"round_id", "published_by_admin_id"} <= set(
+        LeaderboardSnapshot.__table__.columns.keys()
+    )
+    assert {
+        "snapshot_id",
+        "rank",
+        "team_id",
+        "team_name",
+        "score",
+        "submissions",
+    } <= set(LeaderboardSnapshotEntry.__table__.columns.keys())

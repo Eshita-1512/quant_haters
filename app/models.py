@@ -183,3 +183,23 @@ class AdminAuditLog(TimestampMixin, Base):
     admin_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("admin_users.id"))
     action: Mapped[str] = mapped_column(String(100))
     details: Mapped[dict | None] = mapped_column(JSONB)
+
+
+class LeaderboardSnapshot(TimestampMixin, Base):
+    __tablename__ = "leaderboard_snapshots"
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    round_id: Mapped[int] = mapped_column(ForeignKey("rounds.id"))
+    published_by_admin_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("admin_users.id"))
+
+
+class LeaderboardSnapshotEntry(Base):
+    __tablename__ = "leaderboard_snapshot_entries"
+    __table_args__ = (CheckConstraint("rank > 0"), CheckConstraint("submissions >= 0"))
+    snapshot_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("leaderboard_snapshots.id", ondelete="CASCADE"), primary_key=True
+    )
+    rank: Mapped[int] = mapped_column(Integer, primary_key=True)
+    team_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("teams.id"))
+    team_name: Mapped[str] = mapped_column(String(150))
+    score: Mapped[Decimal] = mapped_column(Numeric(12, 6))
+    submissions: Mapped[int] = mapped_column(Integer)

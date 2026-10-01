@@ -9,9 +9,37 @@ from app.database import get_db
 from app.dependencies import get_current_admin_id
 from app.models import AdminAuditLog, DatasetRelease, EventState, Round, RoundPhase, Submission, Team, TeamAssignment
 from app.schemas.admin import AdminStatus, FlashCrashResult
+from app.schemas.leaderboard import LeaderboardEntry, SnapshotResult
+from app.services.leaderboard import live_leaderboard, publish_snapshot
 
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+
+def get_admin_live_leaderboard(
+    _admin_id: uuid.UUID = Depends(get_current_admin_id), db: Session = Depends(get_db)
+) -> list[LeaderboardEntry]:
+    return live_leaderboard(db)
+
+
+def publish_leaderboard_snapshot(
+    admin_id: uuid.UUID = Depends(get_current_admin_id), db: Session = Depends(get_db)
+) -> SnapshotResult:
+    return publish_snapshot(db, admin_id)
+
+
+@router.get("/leaderboard", response_model=list[LeaderboardEntry])
+def admin_leaderboard(
+    entries: list[LeaderboardEntry] = Depends(get_admin_live_leaderboard),
+) -> list[LeaderboardEntry]:
+    return entries
+
+
+@router.post("/leaderboard/snapshot", response_model=SnapshotResult)
+def admin_leaderboard_snapshot(
+    result: SnapshotResult = Depends(publish_leaderboard_snapshot),
+) -> SnapshotResult:
+    return result
 
 
 def activate_flash_crash_rounds(
