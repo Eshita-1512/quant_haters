@@ -15,6 +15,9 @@ def test_frozen_routes_exist() -> None:
         "/api/v1/event/status",
         "/api/v1/admin/flash-crash",
         "/api/v1/admin/status",
+        "/api/v1/admin/leaderboard",
+        "/api/v1/admin/leaderboard/snapshot",
+        "/api/v1/admin/final-backtest",
     } <= set(paths)
 
 

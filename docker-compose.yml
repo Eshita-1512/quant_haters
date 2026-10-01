@@ -24,6 +24,7 @@ services:
       DATABASE_URL: postgresql+psycopg://postgres:postgres@db:5432/dz_quant
       JWT_SECRET: local-compose-secret-change-before-sharing-123456
       CORS_ORIGINS: '["http://localhost:5173","http://127.0.0.1:5173"]'
+      PRODUCTION_FRONTEND_URL: ${PRODUCTION_FRONTEND_URL:-}
       PRIVATE_DATA_DIR: /app/private_data
       MASTER_VALIDATION_PATH: /app/private_data/master_validation.csv
     ports:

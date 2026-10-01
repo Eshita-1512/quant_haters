@@ -72,11 +72,14 @@ All application endpoints use the `/api/v1` prefix.
 | `POST` | `/auth/admin/login` | Administrator login |
 | `GET` | `/team/me` | Current assignment and prediction window |
 | `GET` | `/team/data` | Short-lived, team-authorized dataset link |
-| `POST` | `/submit/round/{round_num}` | Validate, store, and score a submission |
-| `GET` | `/leaderboard` | Current-round ranking |
+| `POST` | `/submit/round/{round_num}` | Rate-limited validation and scoring; raw scores remain private |
+| `GET` | `/leaderboard` | Latest frozen public ranking snapshot |
 | `GET` | `/event/status` | Round timer and Flash Crash state |
 | `POST` | `/admin/flash-crash` | Atomic R1-to-R2 Flash Crash transition |
 | `GET` | `/admin/status` | Private operational status |
+| `GET` | `/admin/leaderboard` | Private live leaderboard |
+| `POST` | `/admin/leaderboard/snapshot` | Publish the live ranking as a public snapshot |
+| `POST` | `/admin/final-backtest` | Run the hidden R3 final backtest |
 
 Send protected requests with `Authorization: Bearer <access_token>`. Dataset files and secret validation targets live under `private_data/`, which is excluded from Git and is never mounted as public static content.
 
@@ -119,6 +122,8 @@ docker compose down
 ## Production notes
 
 - Generate a long random `JWT_SECRET`; never commit `.env`.
+- Set `PRODUCTION_FRONTEND_URL` to the deployed frontend origin before deployment.
+- Set `HIDDEN_VALIDATION_PATH` to the private team-specific R3 final target file.
 - Put PostgreSQL and dataset storage on persistent encrypted infrastructure.
 - Serve FastAPI behind TLS and a trusted reverse proxy.
 - Restrict admin credentials and the Flash Crash endpoint to event operators.
