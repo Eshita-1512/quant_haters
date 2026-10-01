@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.database import get_db
-from app.models import AdminUser, AuthSession, Team
+from app.models import AdminAuthSession, AdminUser, AuthSession, Team
 from app.schemas.auth import AdminLoginRequest, LoginRequest, TokenResponse
 from app.security import create_access_token, verify_password
 
@@ -43,4 +43,15 @@ def admin_login(payload: AdminLoginRequest, db: Session = Depends(get_db)) -> To
     admin = db.scalar(select(AdminUser).where(AdminUser.username == payload.username))
     if admin is None or not admin.is_active or not verify_password(payload.password, admin.password_hash):
         raise HTTPException(status_code=401, detail="Invalid administrator credentials.")
-    return TokenResponse(access_token=create_access_token(subject=str(admin.id), role="admin"))
+    token = create_access_token(subject=str(admin.id), role="admin")
+    settings = get_settings()
+    db.add(
+        AdminAuthSession(
+            admin_id=admin.id,
+            token_hash=hashlib.sha256(token.encode()).hexdigest(),
+            expires_at=datetime.now(UTC)
+            + timedelta(minutes=settings.access_token_minutes),
+        )
+    )
+    db.commit()
+    return TokenResponse(access_token=token)

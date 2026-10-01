@@ -7,7 +7,7 @@ from app import models  # noqa: F401
 
 def test_initial_migration_is_single_head() -> None:
     scripts = ScriptDirectory.from_config(Config("alembic.ini"))
-    assert scripts.get_heads() == ["0004_submission_rate_limits"]
+    assert scripts.get_heads() == ["0005_admin_auth_sessions"]
 
 
 def test_metadata_contains_all_approved_tables() -> None:
@@ -17,4 +17,5 @@ def test_metadata_contains_all_approved_tables() -> None:
         "signal_rows", "scores", "admin_users", "event_state", "admin_audit_log",
         "leaderboard_snapshots", "leaderboard_snapshot_entries",
         "submission_rate_limits",
+        "admin_auth_sessions",
     }

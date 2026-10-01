@@ -1,4 +1,5 @@
 from app.models import (
+    AdminAuthSession,
     DatasetRelease,
     LeaderboardSnapshot,
     LeaderboardSnapshotEntry,
@@ -47,3 +48,10 @@ def test_leaderboard_snapshot_models_freeze_rank_and_submission_count() -> None:
 def test_submission_rate_limit_has_one_row_per_team() -> None:
     assert SubmissionRateLimit.__table__.primary_key.columns.keys() == ["team_id"]
     assert "last_attempt_at" in SubmissionRateLimit.__table__.columns
+
+
+def test_admin_sessions_store_only_token_hash_and_revocation_state() -> None:
+    assert {"admin_id", "token_hash", "expires_at", "revoked_at"} <= set(
+        AdminAuthSession.__table__.columns.keys()
+    )
+    assert "token" not in AdminAuthSession.__table__.columns

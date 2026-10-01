@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 from app.database import get_db
 from app.main import create_app
 from app.security import hash_password
+from app.models import AdminAuthSession
 
 
 class FakeSession:
@@ -88,10 +89,13 @@ def test_admin_login_returns_admin_jwt(monkeypatch) -> None:
         password_hash=hash_password("admin-password"),
         is_active=True,
     )
-    client, _ = make_client(admin)
+    client, db = make_client(admin)
     response = client.post(
         "/api/v1/auth/admin/login",
         json={"username": "organizer", "password": "admin-password"},
     )
     assert response.status_code == 200
     assert response.json()["access_token"]
+    assert len(db.added) == 1
+    assert isinstance(db.added[0], AdminAuthSession)
+    assert db.committed is True

@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import AdminUser, AuthSession, EventState, Stock, Team, TeamAssignment
+from app.models import AdminAuthSession, AdminUser, AuthSession, EventState, Stock, Team, TeamAssignment
 from app.schemas.team import StockInfo, TeamProfile
 from app.security import InvalidTokenError, decode_access_token
 
@@ -61,8 +61,21 @@ def get_current_admin_id(
         raise unauthorized from None
     if claims.role != "admin":
         raise unauthorized
-    admin = db.scalar(select(AdminUser).where(AdminUser.id == admin_id, AdminUser.is_active.is_(True)))
-    if admin is None:
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
+    row = db.execute(
+        select(AdminAuthSession, AdminUser)
+        .join(AdminUser, AdminUser.id == AdminAuthSession.admin_id)
+        .where(AdminAuthSession.token_hash == token_hash)
+    ).one_or_none()
+    if row is None:
+        raise unauthorized
+    session, admin = row
+    if (
+        session.admin_id != admin_id
+        or not admin.is_active
+        or session.revoked_at is not None
+        or session.expires_at <= datetime.now(UTC)
+    ):
         raise unauthorized
     return admin_id
 
