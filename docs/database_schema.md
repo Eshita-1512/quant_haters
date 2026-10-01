@@ -6,6 +6,7 @@ This schema is owned by SQLAlchemy models in `app/models.py` and versioned throu
 
 ```text
 teams ──< auth_sessions
+  ├── submission_rate_limits
   └──< team_assignments >── stocks
           │       └──────── rounds
           └──< dataset_releases ──< download_events
@@ -14,7 +15,9 @@ teams ──< auth_sessions
                     └─────────── scores
 
 rounds ── event_state
-admin_users ──< admin_audit_log
+admin_users ──< admin_auth_sessions
+  ├──< admin_audit_log
+  └──< leaderboard_snapshots ──< leaderboard_snapshot_entries >── teams
 ```
 
 ## Tables
@@ -166,6 +169,46 @@ The service locks the team's current assignment before counting/inserting so con
 | `is_active` | boolean | Authorization switch |
 | `created_at` | timestamptz | Server-generated |
 
+### `admin_auth_sessions`
+
+| Column | Type | Rules |
+|---|---|---|
+| `id` | UUID | Primary key |
+| `admin_id` | UUID | FK `admin_users.id`, cascade delete |
+| `token_hash` | varchar(64) | Unique SHA-256 hash of issued administrator JWT |
+| `expires_at` | timestamptz | Enforced on every administrator request |
+| `revoked_at` | timestamptz | Nullable; non-null means revoked |
+| `created_at` | timestamptz | Server-generated |
+
+### `submission_rate_limits`
+
+| Column | Type | Rules |
+|---|---|---|
+| `team_id` | UUID | Primary key and FK `teams.id`, cascade delete |
+| `last_attempt_at` | timestamptz | Start time of the most recent admitted submission request |
+
+The row is locked transactionally so multiple API workers enforce one request per team per 60 seconds.
+
+### `leaderboard_snapshots`
+
+| Column | Type | Rules |
+|---|---|---|
+| `id` | UUID | Primary key |
+| `round_id` | integer | FK `rounds.id` |
+| `published_by_admin_id` | UUID | FK `admin_users.id` |
+| `created_at` | timestamptz | Snapshot publication time |
+
+### `leaderboard_snapshot_entries`
+
+| Column | Type | Rules |
+|---|---|---|
+| `snapshot_id` | UUID | Composite primary key; FK `leaderboard_snapshots.id`, cascade delete |
+| `rank` | integer | Composite primary key; check greater than zero |
+| `team_id` | UUID | FK `teams.id` |
+| `team_name` | varchar(150) | Frozen team display name |
+| `score` | numeric(12,6) | Frozen best score |
+| `submissions` | integer | Frozen round submission count; non-negative |
+
 ### `event_state`
 
 Singleton row (`id = 1`) read by the dashboard timer and Flash Crash modal.
@@ -194,4 +237,7 @@ Singleton row (`id = 1`) read by the dashboard timer and Flash Crash modal.
 - Dataset selection joins the authenticated team to its assignment. Signed file URLs expire after 120 seconds and storage keys are constrained to `PRIVATE_DATA_DIR`.
 - Secret validation targets are read only by the scoring service and are never exposed through static routes.
 - Team tokens require a matching, unexpired, non-revoked `auth_sessions` row and an active team.
+- Administrator tokens require a matching, unexpired, non-revoked `admin_auth_sessions` row and an active administrator.
+- The public leaderboard reads only the latest administrator-published snapshot; live scores remain administrator-only.
+- Participant submission responses do not expose raw scores or component metrics.
 - Flash Crash activation locks the singleton event state, verifies all R2 crash releases, updates both rounds/state, and writes an audit row in one transaction.
