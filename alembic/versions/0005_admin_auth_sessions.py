@@ -7,8 +7,6 @@ Revises: 0004_submission_rate_limits
 from collections.abc import Sequence
 
 from alembic import op
-import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 
 revision: str = "0005_admin_auth_sessions"
@@ -18,19 +16,19 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    op.create_table(
-        "admin_auth_sessions",
-        sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("admin_id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("token_hash", sa.String(length=64), nullable=False),
-        sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("revoked_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.ForeignKeyConstraint(["admin_id"], ["admin_users.id"], ondelete="CASCADE"),
-        sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("token_hash"),
+    op.execute(
+        """
+        CREATE TABLE IF NOT EXISTS admin_auth_sessions (
+            id UUID PRIMARY KEY,
+            admin_id UUID NOT NULL REFERENCES admin_users(id) ON DELETE CASCADE,
+            token_hash VARCHAR(64) NOT NULL UNIQUE,
+            expires_at TIMESTAMPTZ NOT NULL,
+            revoked_at TIMESTAMPTZ,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+        """
     )
 
 
 def downgrade() -> None:
-    op.drop_table("admin_auth_sessions")
+    op.execute("DROP TABLE IF EXISTS admin_auth_sessions")

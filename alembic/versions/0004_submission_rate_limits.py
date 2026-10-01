@@ -7,8 +7,6 @@ Revises: 0003_leaderboard_snapshots
 from collections.abc import Sequence
 
 from alembic import op
-import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 
 revision: str = "0004_submission_rate_limits"
@@ -18,14 +16,15 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    op.create_table(
-        "submission_rate_limits",
-        sa.Column("team_id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("last_attempt_at", sa.DateTime(timezone=True), nullable=False),
-        sa.ForeignKeyConstraint(["team_id"], ["teams.id"], ondelete="CASCADE"),
-        sa.PrimaryKeyConstraint("team_id"),
+    op.execute(
+        """
+        CREATE TABLE IF NOT EXISTS submission_rate_limits (
+            team_id UUID PRIMARY KEY REFERENCES teams(id) ON DELETE CASCADE,
+            last_attempt_at TIMESTAMPTZ NOT NULL
+        )
+        """
     )
 
 
 def downgrade() -> None:
-    op.drop_table("submission_rate_limits")
+    op.execute("DROP TABLE IF EXISTS submission_rate_limits")

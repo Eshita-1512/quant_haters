@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from alembic.config import Config
 from alembic.script import ScriptDirectory
 
@@ -19,3 +21,13 @@ def test_metadata_contains_all_approved_tables() -> None:
         "submission_rate_limits",
         "admin_auth_sessions",
     }
+
+
+def test_post_baseline_table_migrations_are_safe_for_fresh_databases() -> None:
+    for filename in (
+        "0003_leaderboard_snapshots.py",
+        "0004_submission_rate_limits.py",
+        "0005_admin_auth_sessions.py",
+    ):
+        source = (Path("alembic/versions") / filename).read_text(encoding="utf-8")
+        assert "CREATE TABLE IF NOT EXISTS" in source

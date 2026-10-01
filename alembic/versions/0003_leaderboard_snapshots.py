@@ -7,8 +7,6 @@ Revises: 0002_assignment_round_integrity
 from collections.abc import Sequence
 
 from alembic import op
-import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 
 revision: str = "0003_leaderboard_snapshots"
@@ -18,32 +16,31 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    op.create_table(
-        "leaderboard_snapshots",
-        sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("round_id", sa.Integer(), nullable=False),
-        sa.Column("published_by_admin_id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.ForeignKeyConstraint(["published_by_admin_id"], ["admin_users.id"]),
-        sa.ForeignKeyConstraint(["round_id"], ["rounds.id"]),
-        sa.PrimaryKeyConstraint("id"),
+    op.execute(
+        """
+        CREATE TABLE IF NOT EXISTS leaderboard_snapshots (
+            id UUID PRIMARY KEY,
+            round_id INTEGER NOT NULL REFERENCES rounds(id),
+            published_by_admin_id UUID NOT NULL REFERENCES admin_users(id),
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+        """
     )
-    op.create_table(
-        "leaderboard_snapshot_entries",
-        sa.Column("snapshot_id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("rank", sa.Integer(), nullable=False),
-        sa.Column("team_id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("team_name", sa.String(length=150), nullable=False),
-        sa.Column("score", sa.Numeric(12, 6), nullable=False),
-        sa.Column("submissions", sa.Integer(), nullable=False),
-        sa.CheckConstraint("rank > 0"),
-        sa.CheckConstraint("submissions >= 0"),
-        sa.ForeignKeyConstraint(["snapshot_id"], ["leaderboard_snapshots.id"], ondelete="CASCADE"),
-        sa.ForeignKeyConstraint(["team_id"], ["teams.id"]),
-        sa.PrimaryKeyConstraint("snapshot_id", "rank"),
+    op.execute(
+        """
+        CREATE TABLE IF NOT EXISTS leaderboard_snapshot_entries (
+            snapshot_id UUID NOT NULL REFERENCES leaderboard_snapshots(id) ON DELETE CASCADE,
+            rank INTEGER NOT NULL CHECK (rank > 0),
+            team_id UUID NOT NULL REFERENCES teams(id),
+            team_name VARCHAR(150) NOT NULL,
+            score NUMERIC(12, 6) NOT NULL,
+            submissions INTEGER NOT NULL CHECK (submissions >= 0),
+            PRIMARY KEY (snapshot_id, rank)
+        )
+        """
     )
 
 
 def downgrade() -> None:
-    op.drop_table("leaderboard_snapshot_entries")
-    op.drop_table("leaderboard_snapshots")
+    op.execute("DROP TABLE IF EXISTS leaderboard_snapshot_entries")
+    op.execute("DROP TABLE IF EXISTS leaderboard_snapshots")
