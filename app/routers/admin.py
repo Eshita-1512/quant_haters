@@ -1,20 +1,21 @@
 import uuid
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.dependencies import get_current_admin_id
 from app.models import AdminAuditLog, DatasetRelease, EventState, Round, RoundPhase, Submission, Team, TeamAssignment
-from app.schemas.admin import AdminStatus, FinalBacktestResult, FlashCrashResult
+from app.schemas.admin import AdminStatus, FinalBacktestResult, FlashCrashRequest, FlashCrashResult
 from app.services.final_backtest import run_final_backtest
 from app.schemas.leaderboard import LeaderboardEntry, SnapshotResult
 from app.services.leaderboard import live_leaderboard, publish_snapshot
 
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+DEFAULT_FLASH_CRASH_MESSAGE = "Market disruption detected. Download the new dataset."
 
 
 def get_admin_live_leaderboard(
@@ -57,7 +58,12 @@ def final_backtest(
 
 
 def activate_flash_crash_rounds(
-    state: EventState, round_one: Round, round_two: Round, *, now: datetime
+    state: EventState,
+    round_one: Round,
+    round_two: Round,
+    *,
+    now: datetime,
+    message: str | None = None,
 ) -> None:
     round_two_duration = round_two.ends_at - round_two.starts_at
     round_one.phase = RoundPhase.COMPLETED
@@ -66,7 +72,7 @@ def activate_flash_crash_rounds(
     round_two.ends_at = now + round_two_duration
     state.current_round_id = round_two.id
     state.flash_crash_active = True
-    state.flash_crash_message = "Market disruption detected. Download the new dataset."
+    state.flash_crash_message = message or DEFAULT_FLASH_CRASH_MESSAGE
     state.state_version += 1
 
 
@@ -75,7 +81,11 @@ def ensure_flash_crash_transition_allowed(state: EventState, round_one: Round) -
         raise HTTPException(status_code=409, detail="Flash Crash can only start once from Round 1.")
 
 
-def trigger_flash_crash(admin_id: uuid.UUID = Depends(get_current_admin_id), db: Session = Depends(get_db)) -> FlashCrashResult:
+def trigger_flash_crash(
+    payload: FlashCrashRequest | None = Body(default=None),
+    admin_id: uuid.UUID = Depends(get_current_admin_id),
+    db: Session = Depends(get_db),
+) -> FlashCrashResult:
     state = db.scalar(select(EventState).where(EventState.id == 1).with_for_update())
     round_one = db.scalar(select(Round).where(Round.round_code == "R1"))
     round_two = db.scalar(select(Round).where(Round.round_code == "R2"))
@@ -111,7 +121,13 @@ def trigger_flash_crash(admin_id: uuid.UUID = Depends(get_current_admin_id), db:
     )
     if not active_assignment_ids or ready_assignment_ids != active_assignment_ids:
         raise HTTPException(status_code=409, detail="Flash Crash datasets are incomplete.")
-    activate_flash_crash_rounds(state, round_one, round_two, now=now)
+    activate_flash_crash_rounds(
+        state,
+        round_one,
+        round_two,
+        now=now,
+        message=payload.message if payload else None,
+    )
     db.add(AdminAuditLog(admin_id=admin_id, action="TRIGGER_FLASH_CRASH", details={"from": "R1", "to": "R2"}))
     db.commit()
     return FlashCrashResult(current_round="R2", flash_crash_active=True, state_version=state.state_version)

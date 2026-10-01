@@ -51,13 +51,37 @@ def test_flash_crash_opens_round_two_immediately_and_preserves_duration() -> Non
         state_version=7,
     )
 
-    activate_flash_crash_rounds(state, round_one, round_two, now=now)
+    activate_flash_crash_rounds(
+        state, round_one, round_two, now=now, message="Custom market alert."
+    )
 
     assert round_two.starts_at == now
     assert round_two.ends_at == now + timedelta(hours=1)
     assert state.current_round_id == 2
     assert state.flash_crash_active is True
+    assert state.flash_crash_message == "Custom market alert."
     assert state.state_version == 8
+
+
+def test_flash_crash_uses_default_message_when_override_is_omitted() -> None:
+    now = datetime.now(UTC)
+    round_one = SimpleNamespace(phase="live")
+    round_two = SimpleNamespace(
+        phase="scheduled", starts_at=now, ends_at=now + timedelta(hours=1), id=2
+    )
+    state = SimpleNamespace(
+        current_round_id=1,
+        flash_crash_active=False,
+        flash_crash_message=None,
+        state_version=1,
+    )
+
+    activate_flash_crash_rounds(state, round_one, round_two, now=now)
+
+    assert (
+        state.flash_crash_message
+        == "Market disruption detected. Download the new dataset."
+    )
 
 
 def test_flash_crash_cannot_be_triggered_twice() -> None:

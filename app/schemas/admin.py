@@ -1,6 +1,20 @@
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
+
+
+class FlashCrashRequest(BaseModel):
+    message: str | None = Field(default=None, max_length=500)
+
+    @field_validator("message")
+    @classmethod
+    def validate_message(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("Flash Crash message cannot be empty.")
+        return cleaned
 
 
 class FlashCrashResult(BaseModel):
