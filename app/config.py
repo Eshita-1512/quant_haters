@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
     private_data_dir: Path = Path("private_data")
     master_validation_path: Path = Path("private_data/master_validation.csv")
+    hidden_validation_path: Path = Path("private_data/hidden_validation.csv")
     max_upload_bytes: int = Field(default=1_000_000, gt=0)
 
 

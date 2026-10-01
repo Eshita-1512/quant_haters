@@ -17,3 +17,14 @@ class AdminStatus(BaseModel):
     submissions_count: int
     time_remaining_seconds: int
 
+
+class FinalBacktestEntry(BaseModel):
+    rank: int
+    team: str
+    score: float
+
+
+class FinalBacktestResult(BaseModel):
+    status: Literal["success"] = "success"
+    round: Literal["R3"] = "R3"
+    rankings: list[FinalBacktestEntry]

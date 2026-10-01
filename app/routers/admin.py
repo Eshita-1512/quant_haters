@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.dependencies import get_current_admin_id
 from app.models import AdminAuditLog, DatasetRelease, EventState, Round, RoundPhase, Submission, Team, TeamAssignment
-from app.schemas.admin import AdminStatus, FlashCrashResult
+from app.schemas.admin import AdminStatus, FinalBacktestResult, FlashCrashResult
+from app.services.final_backtest import run_final_backtest
 from app.schemas.leaderboard import LeaderboardEntry, SnapshotResult
 from app.services.leaderboard import live_leaderboard, publish_snapshot
 
@@ -39,6 +40,19 @@ def admin_leaderboard(
 def admin_leaderboard_snapshot(
     result: SnapshotResult = Depends(publish_leaderboard_snapshot),
 ) -> SnapshotResult:
+    return result
+
+
+def get_final_backtest(
+    admin_id: uuid.UUID = Depends(get_current_admin_id), db: Session = Depends(get_db)
+) -> FinalBacktestResult:
+    return run_final_backtest(db, admin_id)
+
+
+@router.post("/final-backtest", response_model=FinalBacktestResult)
+def final_backtest(
+    result: FinalBacktestResult = Depends(get_final_backtest),
+) -> FinalBacktestResult:
     return result
 
 
