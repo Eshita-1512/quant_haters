@@ -201,7 +201,7 @@ The API must reject and return a clean error message for any of the following:
 | 4 | Duplicate timestamps | "Duplicate timestamp found at row {n}." |
 | 5 | Timestamps not 1–50 | "Timestamp {x} is outside your assigned window." |
 | 6 | Prediction not 0 or 1 (R1/R2) | "Row {n}: prediction must be 0 or 1." |
-| 7 | Signal outside [-1, 1] (R3) | "Row {n}: signal must be between -1.0 and 1.0." |
+| 7 | Signal outside [-1, 1] (R3) | "Row {n}: signal must be between -1.0 and 1.0." | ← column name is `signal` not `position` |
 | 8 | Confidence outside [0, 1] | "Row {n}: confidence must be between 0.0 and 1.0." |
 | 9 | Non-numeric values | "Row {n}: non-numeric value found." |
 | 10 | Submission after round deadline | "Round {r} is closed." |
@@ -213,19 +213,50 @@ The API must reject and return a clean error message for any of the following:
 
 ## 7. API Contract (For M4 to build, M3 to consume)
 
-### Base URL: https://[your-domain]/api/v1
+### Base URL: https://[your-domain]
+> ⚠️ No `/v1/` prefix — routes are exactly as listed below (the frontend uses these paths verbatim).
+
+#### Team (Participant) Endpoints
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| POST | /auth/login | None | Team login. Body: {team_id, password}. Returns JWT token. |
-| GET | /team/me | JWT | Returns team info + assigned stock + windows |
-| GET | /team/data | JWT | Returns download URL for team's CSV |
-| POST | /submit/round/{round_num} | JWT | Upload predictions CSV. Returns score. |
-| GET | /leaderboard | JWT | Returns sorted leaderboard for current round |
-| POST | /admin/flash-crash | Admin JWT | Activates Round 2. Releases crash data. |
-| GET | /admin/status | Admin JWT | Returns event state: round, timer, submissions count |
+| POST | /api/auth | None | Team login. Body: `{team_id, password}`. Returns `{token}`. |
+| GET | /api/status | JWT | Full event status: round, phase, timer, flash crash state, assigned stock, download availability, submission type. |
+| GET | /api/data/download | JWT | Returns a short-lived download URL for the team's CSV. |
+| POST | /api/upload | JWT | Upload predictions/positions CSV. Returns score. Round is inferred from current event state server-side. |
 
-### Submit Response (success)
+#### Admin Endpoints
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| POST | /api/admin/auth | None | Admin login. Body: `{username, password}`. Returns `{token}`. |
+| GET | /api/admin/status | Admin JWT | Returns full event state including all round info, flash crash state, team/submission counts. |
+| POST | /api/admin/timer | Admin JWT | Control the round timer. Body: `{action, seconds?}` where action ∈ `pause \| resume \| extend \| set \| end`. |
+| POST | /api/admin/round | Admin JWT | Start a round. Body: `{round, duration_seconds}` where round ∈ `R1 \| R2 \| R3`. |
+| POST | /api/admin/flash-crash | Admin JWT | Activate/deactivate flash crash. Body: `{active, message?, duration_seconds?}`. |
+| GET | /api/admin/leaderboard?round= | Admin JWT | Returns sorted leaderboard entries for the given round (`R1`, `R2`, or `R3`). |
+
+### /api/status Response Shape
+```json
+{
+  "state_version": 3,
+  "server_time": "2026-09-24T10:00:00Z",
+  "current_round": "R1",
+  "round_name": "Round 1: Foundation",
+  "round_phase": "live",
+  "round_ends_at": "2026-09-24T11:15:00Z",
+  "time_remaining_seconds": 4200,
+  "flash_crash_active": false,
+  "flash_crash_message": null,
+  "assigned_stock": { "code": "STOCK_A", "name": "Stock A" },
+  "download_available": true,
+  "submission_type": "prediction"
+}
+```
+> `round_phase` ∈ `scheduled | live | flash_crash | paused | completed`
+> `submission_type` ∈ `prediction | position`
+
+### /api/upload Response (success)
 ```json
 {
   "status": "success",
@@ -239,7 +270,7 @@ The API must reject and return a clean error message for any of the following:
 }
 ```
 
-### Submit Response (validation error)
+### /api/upload Response (validation error)
 ```json
 {
   "status": "error",

@@ -267,7 +267,7 @@ function validateCsv(text: string, type: SubmissionType): string | null {
     .filter((line) => line.length > 0);
   if (rows.length === 0) return "Missing columns: timestamp";
   const header = rows[0].split(",").map((h) => h.trim().toLowerCase());
-  const valueColumn = type === "prediction" ? "prediction" : "position";
+  const valueColumn = type === "prediction" ? "prediction" : "signal";
   const required = ["timestamp", valueColumn];
   const missing = required.filter((column) => !header.includes(column));
   if (missing.length > 0) return `Missing columns: ${missing.join(", ")}`;
@@ -303,7 +303,7 @@ function validateCsv(text: string, type: SubmissionType): string | null {
         if (confidence < 0 || confidence > 1) return `Row ${rowNumber}: confidence must be between 0.0 and 1.0.`;
       }
     } else if (value < -1 || value > 1) {
-      return `Row ${rowNumber}: position must be between -1.0 and 1.0.`;
+      return `Row ${rowNumber}: signal must be between -1.0 and 1.0.`;
     }
   }
   return null;

@@ -43,10 +43,10 @@ export const csvFormats = {
     ],
   },
   position: {
-    header: "timestamp,position",
+    header: "timestamp,signal",
     example: ["1,0.85", "2,-0.40", "3,0.00"],
     notes: [
-      "position between -1.0 (short) and +1.0 (long)",
+      "signal between -1.0 (full short) and +1.0 (full long)",
       `exactly ${PREDICTION_ROWS} rows, timestamps 1 to ${PREDICTION_ROWS}`,
     ],
   },
