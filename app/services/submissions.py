@@ -15,14 +15,16 @@ from app.schemas.submission import SubmissionResult
 from app.services.scoring import score_binary, score_signals
 
 
-def _validation_targets(stock_code: str, start: int, round_number: int) -> list[int] | list[Decimal]:
+def _validation_targets(
+    team_code: str, stock_code: str, start: int, round_number: int
+) -> list[int] | list[Decimal]:
     path = get_settings().master_validation_path
     if not path.is_file():
         raise RuntimeError("Master validation data is unavailable.")
     by_timestamp: dict[int, dict[str, str]] = {}
     with path.open(newline="", encoding="utf-8") as handle:
         for row in csv.DictReader(handle):
-            if row["stock_id"] == stock_code:
+            if row["team_id"] == team_code and row["stock_id"] == stock_code:
                 by_timestamp[int(row["master_timestamp"])] = row
     column = "target_r3" if round_number == 3 else "target_r1r2"
     values = [by_timestamp[start + offset][column] for offset in range(50)]
@@ -58,7 +60,9 @@ async def process_submission(*, file: UploadFile, round_number: int, team_id: uu
     submission = Submission(team_id=team_id, round_id=round_.id, stock_id=stock.id, assignment_id=assignment.id, original_filename=file.filename, file_hash=hashlib.sha256(content).hexdigest(), file_size_bytes=len(content), row_count=50, status=SubmissionStatus.SCORING)
     db.add(submission)
     db.flush()
-    targets = _validation_targets(stock.stock_code, assignment.predict_start, round_number)
+    targets = _validation_targets(
+        team.team_code, stock.stock_code, assignment.predict_start, round_number
+    )
     if round_number == 3:
         signals = [row.signal for row in rows if isinstance(row, SignalInput)]
         result = score_signals(signals, targets)  # type: ignore[arg-type]

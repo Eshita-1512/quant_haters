@@ -37,16 +37,16 @@ def _write_dataset(path: Path, stock_code: str, round_number: int, crash: bool) 
     return hashlib.sha256(content).hexdigest(), len(content), 850
 
 
-def _write_master_validation(path: Path, stock_codes: list[str]) -> None:
+def _write_master_validation(path: Path, assignments: list[tuple[str, str]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
-        writer.writerow(["stock_id", "master_timestamp", "target_r1r2", "target_r3"])
-        for stock_index, stock_code in enumerate(stock_codes):
+        writer.writerow(["team_id", "stock_id", "master_timestamp", "target_r1r2", "target_r3"])
+        for assignment_index, (team_code, stock_code) in enumerate(assignments):
             for timestamp in range(1, 3001):
-                direction = 1 if (timestamp + stock_index) % 2 else 0
+                direction = 1 if (timestamp + assignment_index) % 2 else 0
                 market_return = "0.0100" if direction else "-0.0080"
-                writer.writerow([stock_code, timestamp, direction, market_return])
+                writer.writerow([team_code, stock_code, timestamp, direction, market_return])
 
 
 def seed() -> None:
@@ -115,7 +115,13 @@ def seed() -> None:
 
         db.add(AdminUser(username="admin", password_hash=hash_password(ADMIN_PASSWORD)))
         db.add(EventState(id=1, current_round_id=1, flash_crash_active=False, state_version=1))
-        _write_master_validation(settings.master_validation_path, [stock.stock_code for stock in stocks])
+        _write_master_validation(
+            settings.master_validation_path,
+            [
+                (team.team_code, stocks[index % len(stocks)].stock_code)
+                for index, team in enumerate(teams)
+            ],
+        )
         db.commit()
 
     print("Seeded 40 teams, 5 stocks, 3 rounds, datasets, validation targets, and admin.")
