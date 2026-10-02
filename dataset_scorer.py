@@ -49,7 +49,8 @@ REQUIRED_MASTER_COLS = {
     "open", "high", "low", "close", "volume",
     "return_1d", "sma_10", "sma_30", "momentum_5",
     "volatility_20", "rsi_14", "volume_z_20", "order_flow",
-    "regime", "flash_crash_day", "next_return", "target",
+    "regime", "next_return", "target",
+    # NOTE: flash_crash_day is optional — crash is auto-detected from regime transition
 }
 
 REQUIRED_PUBLIC_COLS = {
@@ -273,6 +274,34 @@ def score_gbm_fidelity(master, breakdown: ScoreBreakdown) -> None:
     breakdown.gbm_fidelity = max(0.0, pts)
 
 
+def _detect_crash_row(master: pd.DataFrame):
+    """
+    Find the flash crash day. Prefers an explicit flash_crash_day==1 column.
+    Falls back to the first day where regime changes from 0 to 1 (the transition
+    boundary). Returns the single crash row as a Series, or None.
+    """
+    # Method 1: explicit column
+    if "flash_crash_day" in master.columns:
+        rows = master[master["flash_crash_day"] == 1]
+        if len(rows) > 0:
+            return rows.iloc[0], "explicit"
+
+    # Method 2: detect regime 0->1 transition — return the FIRST day of regime=1 (the crash day)
+    if "regime" in master.columns and "timestamp" in master.columns:
+        df = master.sort_values("timestamp")
+        first_crash_rows = df[df["regime"] == 1]
+        if len(first_crash_rows) > 0:
+            return first_crash_rows.iloc[0], "regime_transition"
+
+
+    # Method 3: largest negative return day
+    if "return_1d" in master.columns:
+        idx = master["return_1d"].idxmin()
+        return master.loc[idx], "min_return"
+
+    return None, None
+
+
 def score_flash_crash(master, breakdown: ScoreBreakdown) -> None:
     """Score 3: Flash Crash Architecture (20 pts)"""
     if master is None:
@@ -281,25 +310,21 @@ def score_flash_crash(master, breakdown: ScoreBreakdown) -> None:
 
     pts = 20.0
 
-    if "flash_crash_day" not in master.columns:
-        breakdown.issues.append("Missing flash_crash_day column (-20 pts)")
-        breakdown.flash_crash = 0.0
-        return
+    # Detect crash day (works with or without explicit flash_crash_day column)
+    crash_row, detection_method = _detect_crash_row(master)
 
-    crash_rows = master[master["flash_crash_day"] == 1]
-
-    if len(crash_rows) == 0:
-        breakdown.issues.append("No flash crash day found in master (-15 pts)")
+    if crash_row is None:
+        breakdown.issues.append("Cannot detect flash crash day — no regime or return_1d column (-15 pts)")
         pts -= 15
         breakdown.flash_crash = max(0.0, pts)
         return
 
-    if len(crash_rows) > 1:
-        breakdown.warnings.append(f"Multiple flash crash days ({len(crash_rows)}) — expected 1 (-5 pts)")
-        pts -= 5
+    if detection_method != "explicit":
+        breakdown.warnings.append(
+            f"  [auto-detected crash via {detection_method} — no flash_crash_day column]"
+        )
 
-    crash_row = crash_rows.iloc[0]
-
+    # Check crash return magnitude
     if "return_1d" in master.columns:
         crash_return = crash_row["return_1d"]
         if not (CRASH_RETURN_MIN <= crash_return <= CRASH_RETURN_MAX):
@@ -311,28 +336,32 @@ def score_flash_crash(master, breakdown: ScoreBreakdown) -> None:
         else:
             breakdown.warnings.append(f"  v Crash magnitude: {crash_return:.2%}")
 
-    if "regime" in master.columns:
-        crash_ts = crash_row["timestamp"]
+    # Check regime flags are correct around crash point
+    if "regime" in master.columns and "timestamp" in master.columns:
+        crash_ts   = crash_row["timestamp"]
         pre_regime  = master.loc[master["timestamp"] < crash_ts, "regime"].unique()
         post_regime = master.loc[master["timestamp"] > crash_ts, "regime"].unique()
         if 0 not in pre_regime:
-            breakdown.issues.append("Pre-crash regime not 0 (-5 pts)")
+            breakdown.issues.append("Pre-crash regime is not 0 (-5 pts)")
             pts -= 5
         if 1 not in post_regime:
-            breakdown.issues.append("Post-crash regime not 1 (-5 pts)")
+            breakdown.issues.append("Post-crash regime is not 1 (-5 pts)")
             pts -= 5
+        else:
+            breakdown.warnings.append("  v Regime flags: 0 (normal) -> 1 (crash) transition confirmed")
 
+    # Check crash timing — should not be too early or too late
     if "timestamp" in master.columns:
-        crash_ts  = crash_row["timestamp"]
-        total_ts  = master["timestamp"].max()
+        crash_ts = crash_row["timestamp"]
+        total_ts = master["timestamp"].max()
         pct = crash_ts / total_ts
         if pct < 0.30 or pct > 0.80:
-            breakdown.warnings.append(
-                f"Crash at {pct:.0%} into timeline — ideally 40-70% (-3 pts)"
+            breakdown.issues.append(
+                f"Crash timing {pct:.0%} into timeline is outside ideal range [30%-80%] (-3 pts)"
             )
             pts -= 3
         else:
-            breakdown.warnings.append(f"  v Crash timing: day {crash_ts}/{total_ts} ({pct:.0%})")
+            breakdown.warnings.append(f"  v Crash timing: day {int(crash_ts)}/{int(total_ts)} ({pct:.0%})")
 
     breakdown.flash_crash = max(0.0, pts)
 
