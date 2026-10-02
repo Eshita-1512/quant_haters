@@ -76,7 +76,9 @@ All application endpoints use the `/api/v1` prefix.
 | `GET` | `/leaderboard` | Latest frozen public ranking snapshot |
 | `GET` | `/event/status` | Round timer and Flash Crash state |
 | `POST` | `/admin/flash-crash` | Atomic R1-to-R2 Flash Crash transition |
-| `GET` | `/admin/status` | Private operational status |
+| `GET` | `/admin/status` | Private operational status: current round, timers, all rounds, crash state, counts |
+| `POST` | `/admin/timer` | Pause, resume, extend, set or end the current round's timer |
+| `POST` | `/admin/round` | Start or restart a round; starting R2 triggers the Flash Crash |
 | `GET` | `/admin/leaderboard` | Private live leaderboard |
 | `POST` | `/admin/leaderboard/snapshot` | Publish the live ranking as a public snapshot |
 | `POST` | `/admin/final-backtest` | Run the hidden R3 final backtest |

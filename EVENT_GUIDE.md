@@ -1,6 +1,6 @@
 # Quant ML Trading Challenge: Organizer Guide
 
-Everything you need to set up, run, and operate the event with the real backend and frontend connected.
+How to operate the event once the backend and frontend are running and connected. For installation and first-time setup, follow the [README](README.md).
 
 ## 1. What lives where
 
@@ -8,52 +8,13 @@ Everything you need to set up, run, and operate the event with the real backend 
 |---|---|---|
 | `web/` | Next.js frontend: team portal (`/`, `/dashboard`) and control room (`/admin`) | http://localhost:3000 |
 | `quant_haters-maahnal/` | FastAPI backend + PostgreSQL schema, scoring, timers, datasets | http://localhost:8000 (API docs at `/docs`) |
-| `quant_haters-maahnal/private_data/` | Team dataset files and the secret scoring targets. Never committed, never public | read by the backend only |
+| `quant_haters-maahnal/private_data/` | Team dataset files and the secret scoring targets. Created by the seed, never committed, never public | read by the backend only |
 
-The frontend talks to the backend at `NEXT_PUBLIC_API_BASE_URL` (set in `web/.env.local`). All API routes start with `/api/v1`.
+The frontend talks to the backend at `NEXT_PUBLIC_API_BASE_URL` (in `web/.env.local`). All API routes start with `/api/v1`.
 
-## 2. One-time setup
+## 2. Accounts
 
-### 2.1 Backend configuration
-
-`quant_haters-maahnal/.env` exists and is gitignored. It has a random `JWT_SECRET`, CORS allowing `http://localhost:3000`, and your PostgreSQL login on the first line:
-
-```
-DATABASE_URL=postgresql+psycopg://postgres:YOUR_PASSWORD@localhost:5432/dz_quant
-```
-
-This machine runs two PostgreSQL services. **PostgreSQL 17 is on port 5432** and is the one this project uses. PostgreSQL 16 is on 5433 and is unused. In pgAdmin, register the server as host `localhost`, port `5432`, user `postgres`.
-
-If you change the PostgreSQL password, update this line too, then restart the backend.
-
-### 2.2 Python environment
-
-A virtualenv with all backend dependencies already exists at `quant_haters-maahnal/.venv`. To recreate it:
-
-```bash
-cd quant_haters-maahnal
-python -m venv .venv
-.venv\Scripts\python -m pip install "fastapi>=0.115" "uvicorn[standard]>=0.30" "sqlalchemy>=2.0" "alembic>=1.13" "psycopg[binary]>=3.2" "pydantic-settings>=2.5" "PyJWT>=2.9" "pwdlib[argon2]>=0.2" "python-multipart>=0.0.12" pytest pytest-asyncio httpx
-```
-
-(`pip install -e .` does not work: setuptools cannot auto-discover the packages in this folder layout.)
-
-### 2.3 Database
-
-Already done on this machine: `dz_quant` exists on PostgreSQL 17, all migrations are applied, and the demo event is loaded. Repeat these steps only on a new machine or a fresh database.
-
-1. Create an empty database named `dz_quant` (pgAdmin, or `CREATE DATABASE dz_quant;`).
-2. Create the tables:
-   ```bash
-   cd quant_haters-maahnal
-   .venv\Scripts\alembic upgrade head
-   ```
-3. Load the demo event (only works on a database with no teams):
-   ```bash
-   .venv\Scripts\python -m scripts.seed_demo
-   ```
-
-The seed creates 40 teams, 5 stocks, 3 rounds, placeholder datasets for every team, scoring targets, and one admin.
+The demo seed (`python -m scripts.seed_demo`) creates:
 
 | Who | Login | Password |
 |---|---|---|
@@ -62,39 +23,18 @@ The seed creates 40 teams, 5 stocks, 3 rounds, placeholder datasets for every te
 
 These are demo values. Do not use them at the real event.
 
-### 2.4 Frontend
+## 3. Settings that matter on event day
 
-`web/.env.local` (gitignored) controls the frontend:
-
-| Setting | Value | Meaning |
+| File | Setting | Why |
 |---|---|---|
-| `NEXT_PUBLIC_USE_MOCKS` | `false` | Use the real backend. Set `true` to use the built-in fake backend (no server needed) |
-| `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:8000` | Where the backend runs |
-| `NEXT_PUBLIC_STATUS_POLL_MS` | `5000` | How often team screens refresh |
-| `NEXT_PUBLIC_ADMIN_POLL_MS` | `3000` | How often the control room refreshes |
-| `NEXT_PUBLIC_MAX_UPLOAD_BYTES` | `1000000` | Upload size limit (matches the backend) |
+| `quant_haters-maahnal/.env` | `DATABASE_URL` | PostgreSQL login. Update it if the database password changes, then restart the backend |
+| `quant_haters-maahnal/.env` | `JWT_SECRET` | Signs every login. Changing it logs everyone out |
+| `quant_haters-maahnal/.env` | `CORS_ORIGINS` | Must include the frontend's address |
+| `quant_haters-maahnal/.env` | `HIDDEN_VALIDATION_PATH` | Hidden R3 targets for the final backtest |
+| `web/.env.local` | `NEXT_PUBLIC_USE_MOCKS` | Must be `false` for the real event |
+| `web/.env.local` | `NEXT_PUBLIC_API_BASE_URL` | Where the backend runs |
 
-Restart `npm run dev` after changing `.env.local`.
-
-## 3. Starting everything
-
-Backend (terminal 1):
-
-```bash
-cd quant_haters-maahnal
-.venv\Scripts\python -m uvicorn app.main:app --port 8000
-```
-
-Frontend (terminal 2):
-
-```bash
-cd web
-npm run dev
-```
-
-In the Claude desktop app, `.claude/launch.json` has both as `api` and `web`.
-
-Open http://localhost:3000 for teams and http://localhost:3000/admin for the control room.
+Restart the backend after editing its `.env`, and `npm run dev` after editing `.env.local`.
 
 ## 4. Running the event (control room at `/admin`)
 
@@ -153,11 +93,11 @@ Screens refresh every 5 seconds, so transitions reach teams within about 5 secon
 
 The seed starts R1 immediately with a 1-hour clock. If you seed long before the event, R1 will already have ended, so press **Restart** on R1 with the real duration when the event begins.
 
-**Restart** on R1 also undoes a test run: the crash turns off and R2/R3 go back to "starting soon". Test submissions stay in the database and count toward each team's 10-per-round limit. To clear them completely, drop and recreate `dz_quant`, then rerun section 2.3.
+**Restart** on R1 also undoes a test run: the crash turns off and R2/R3 go back to "starting soon". Test submissions stay in the database and count toward each team's 10-per-round limit. To clear them completely, drop and recreate `dz_quant`, then rerun `alembic upgrade head` and the seed (README step 2).
 
 ## 5. Datasets for individual teams
 
-**Short answer:** the backend is built for per-team datasets (every team gets its own files per round), but **there is no upload button or upload API yet**. Today, datasets only get into the system through the seed script, which writes placeholder files. To load your real datasets you need an import tool (ask Claude to build one) or manual database inserts.
+**Short answer:** the backend is built for per-team datasets (every team gets its own files per round), but **there is no upload button or upload API yet**. Today, datasets only get into the system through the seed script, which writes placeholder files. To load your real datasets you need an import tool (planned) or manual database inserts.
 
 ### How datasets work
 
@@ -199,14 +139,15 @@ Teams also only come from the seed (40 demo teams with one shared password). Rea
 
 ## 6. Checks and tests
 
-Backend tests:
+Backend tests live in `quant_haters-maahnal/tests/` on the development branch (`sadhil`); the `main` branch only carries what is needed to run the app. With the tests present:
 
 ```bash
 cd quant_haters-maahnal
-.venv\Scripts\python -m pytest -q
+pip install pytest pytest-asyncio httpx
+python -m pytest -q
 ```
 
-One test, `test_signed_download_endpoint_serves_csv`, fails on Windows only. It compares `\n` with the `\r\n` that Windows writes. This was already the case before the frontend integration and is not a real bug.
+One test, `test_signed_download_endpoint_serves_csv`, fails on Windows only. It compares `\n` with the `\r\n` that Windows writes, and is not a real bug.
 
 Frontend checks:
 
