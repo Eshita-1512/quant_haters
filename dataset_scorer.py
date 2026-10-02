@@ -131,6 +131,8 @@ def discover_triplets(input_dir: Path) -> list:
     for f in sorted(input_dir.iterdir()):
         if f.suffix.lower() != ".csv":
             continue
+        if ".bak." in f.name or f.stem.endswith(".bak"):
+            continue  # skip backups created by dataset_prep.py
         name = f.stem
 
         if "_synthetic_master" in name:
