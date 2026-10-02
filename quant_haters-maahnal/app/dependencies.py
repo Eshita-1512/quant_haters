@@ -80,17 +80,21 @@ def get_current_admin_id(
     return admin_id
 
 
-def get_current_team_profile(
-    team_id: uuid.UUID = Depends(get_current_team_id), db: Session = Depends(get_db)
-) -> TeamProfile:
-    statement = (
+def team_profile_statement(team_id: uuid.UUID):
+    return (
         select(Team, TeamAssignment, Stock)
+        .select_from(Team)
         .join(EventState, EventState.id == 1)
         .join(TeamAssignment, (TeamAssignment.team_id == Team.id) & (TeamAssignment.round_id == EventState.current_round_id))
         .join(Stock, Stock.id == TeamAssignment.stock_id)
         .where(Team.id == team_id, Team.is_active.is_(True))
     )
-    row = db.execute(statement).one_or_none()
+
+
+def get_current_team_profile(
+    team_id: uuid.UUID = Depends(get_current_team_id), db: Session = Depends(get_db)
+) -> TeamProfile:
+    row = db.execute(team_profile_statement(team_id)).one_or_none()
     if row is None:
         raise HTTPException(status_code=404, detail="No active team assignment found.")
     team, assignment, stock = row

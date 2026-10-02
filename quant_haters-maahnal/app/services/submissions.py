@@ -99,6 +99,19 @@ def _validation_targets(
         raise ValidationDataError("Master validation data is invalid.") from exc
 
 
+def submission_context_statement(team_id: uuid.UUID, round_number: int):
+    return (
+        select(Team, Round, TeamAssignment, Stock)
+        .select_from(Team)
+        .join(EventState, EventState.id == 1)
+        .join(Round, Round.id == EventState.current_round_id)
+        .join(TeamAssignment, (TeamAssignment.team_id == Team.id) & (TeamAssignment.round_id == Round.id))
+        .join(Stock, Stock.id == TeamAssignment.stock_id)
+        .where(Team.id == team_id, Round.round_code == f"R{round_number}")
+        .with_for_update()
+    )
+
+
 async def process_submission(*, file: UploadFile, round_number: int, team_id: uuid.UUID, db: Session) -> SubmissionResult:
     now = datetime.now(UTC)
     enforce_submission_rate_limit(db, team_id, now)
@@ -107,16 +120,7 @@ async def process_submission(*, file: UploadFile, round_number: int, team_id: uu
     content = await file.read(get_settings().max_upload_bytes + 1)
     if len(content) > get_settings().max_upload_bytes:
         raise SubmissionValidationError("CSV file is too large.")
-    statement = (
-        select(Team, Round, TeamAssignment, Stock)
-        .join(EventState, EventState.id == 1)
-        .join(Round, Round.id == EventState.current_round_id)
-        .join(TeamAssignment, (TeamAssignment.team_id == Team.id) & (TeamAssignment.round_id == Round.id))
-        .join(Stock, Stock.id == TeamAssignment.stock_id)
-        .where(Team.id == team_id, Round.round_code == f"R{round_number}")
-        .with_for_update()
-    )
-    row = db.execute(statement).one_or_none()
+    row = db.execute(submission_context_statement(team_id, round_number)).one_or_none()
     if row is None:
         raise SubmissionValidationError(f"Round {round_number} is closed.")
     team, round_, assignment, stock = row

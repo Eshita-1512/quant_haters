@@ -16,15 +16,15 @@ The frontend talks to the backend at `NEXT_PUBLIC_API_BASE_URL` (set in `web/.en
 
 ### 2.1 Backend configuration
 
-`quant_haters-maahnal/.env` already exists (it is gitignored). It has a random `JWT_SECRET` and CORS allowing `http://localhost:3000`.
-
-**You must set your PostgreSQL login.** Edit the first line:
+`quant_haters-maahnal/.env` exists and is gitignored. It has a random `JWT_SECRET`, CORS allowing `http://localhost:3000`, and your PostgreSQL login on the first line:
 
 ```
-DATABASE_URL=postgresql+psycopg://YOUR_USER:YOUR_PASSWORD@localhost:5432/dz_quant
+DATABASE_URL=postgresql+psycopg://postgres:YOUR_PASSWORD@localhost:5432/dz_quant
 ```
 
-Your machine runs PostgreSQL 16 and 17 as Windows services. Use the login of whichever one listens on port 5432.
+This machine runs two PostgreSQL services. **PostgreSQL 17 is on port 5432** and is the one this project uses. PostgreSQL 16 is on 5433 and is unused. In pgAdmin, register the server as host `localhost`, port `5432`, user `postgres`.
+
+If you change the PostgreSQL password, update this line too, then restart the backend.
 
 ### 2.2 Python environment
 
@@ -39,6 +39,8 @@ python -m venv .venv
 (`pip install -e .` does not work: setuptools cannot auto-discover the packages in this folder layout.)
 
 ### 2.3 Database
+
+Already done on this machine: `dz_quant` exists on PostgreSQL 17, all migrations are applied, and the demo event is loaded. Repeat these steps only on a new machine or a fresh database.
 
 1. Create an empty database named `dz_quant` (pgAdmin, or `CREATE DATABASE dz_quant;`).
 2. Create the tables:
@@ -147,9 +149,11 @@ Screens refresh every 5 seconds, so transitions reach teams within about 5 secon
 - **One attempt per 60 seconds per team.** Rejected files also start the 60-second wait.
 - **"Submissions left" appears after the first upload** from that browser; it is not loaded on page open.
 
-### 4.5 Seed timing
+### 4.5 Seed timing and resetting a test run
 
 The seed starts R1 immediately with a 1-hour clock. If you seed long before the event, R1 will already have ended, so press **Restart** on R1 with the real duration when the event begins.
+
+**Restart** on R1 also undoes a test run: the crash turns off and R2/R3 go back to "starting soon". Test submissions stay in the database and count toward each team's 10-per-round limit. To clear them completely, drop and recreate `dz_quant`, then rerun section 2.3.
 
 ## 5. Datasets for individual teams
 
