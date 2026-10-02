@@ -2,6 +2,7 @@ import Head from "next/head";
 import { useCallback, useState, type FormEvent } from "react";
 import AdminLeaderboard from "@/components/admin/AdminLeaderboard";
 import FlashCrashControl from "@/components/admin/FlashCrashControl";
+import ResultsControls from "@/components/admin/ResultsControls";
 import RoundControls from "@/components/admin/RoundControls";
 import TimerControls from "@/components/admin/TimerControls";
 import Panel from "@/components/Panel";
@@ -234,11 +235,11 @@ function AdminConsole({ user }: { user: string }) {
                 </div>
                 <div>
                   <dt className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">Submissions</dt>
-                  <dd className="tabular mt-1 font-mono text-xl font-semibold">{status.submissions_current_round ?? "--"}</dd>
+                  <dd className="tabular mt-1 font-mono text-xl font-semibold">{status.submissions_count}</dd>
                 </div>
                 <div>
                   <dt className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">Teams</dt>
-                  <dd className="tabular mt-1 font-mono text-xl font-semibold">{status.teams_total ?? "--"}</dd>
+                  <dd className="tabular mt-1 font-mono text-xl font-semibold">{status.teams_total}</dd>
                 </div>
               </dl>
             </section>
@@ -270,6 +271,10 @@ function AdminConsole({ user }: { user: string }) {
                 </Panel>
               </div>
             </div>
+
+            <Panel title="Results">
+              <ResultsControls currentRound={status.current_round} />
+            </Panel>
 
             <Panel title="Leaderboard">
               <AdminLeaderboard currentRound={status.current_round} />

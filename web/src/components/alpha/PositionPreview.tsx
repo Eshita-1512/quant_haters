@@ -95,7 +95,7 @@ export default function PositionPreview({ file }: PositionPreviewProps) {
                 <span className="font-mono text-text">{file?.name}</span> / {book.positions.length} periods
               </>
             ) : (
-              "Select a positions CSV to see your book before you submit."
+              "Select a signal CSV to see your book before you submit."
             )}
           </p>
         </div>

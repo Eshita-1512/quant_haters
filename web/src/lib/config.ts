@@ -10,24 +10,26 @@ export const config = {
   apiBaseUrl: (process.env.NEXT_PUBLIC_API_BASE_URL ?? "").replace(/\/+$/, ""),
   statusPollMs: numberFromEnv(process.env.NEXT_PUBLIC_STATUS_POLL_MS, 5000),
   adminPollMs: numberFromEnv(process.env.NEXT_PUBLIC_ADMIN_POLL_MS, 3000),
-  maxUploadBytes: numberFromEnv(process.env.NEXT_PUBLIC_MAX_UPLOAD_BYTES, 1024 * 1024),
+  maxUploadBytes: numberFromEnv(process.env.NEXT_PUBLIC_MAX_UPLOAD_BYTES, 1_000_000),
   predictionRows: PREDICTION_ROWS,
 };
 
 export const endpoints = {
-  auth: "/api/auth",
-  status: "/api/status",
-  download: "/api/data/download",
-  upload: "/api/upload",
+  auth: "/api/v1/auth/login",
+  status: "/api/v1/event/status",
+  download: "/api/v1/team/data",
+  upload: (roundNumber: number) => `/api/v1/submit/round/${roundNumber}`,
 };
 
 export const adminEndpoints = {
-  auth: "/api/admin/auth",
-  status: "/api/admin/status",
-  timer: "/api/admin/timer",
-  round: "/api/admin/round",
-  flashCrash: "/api/admin/flash-crash",
-  leaderboard: "/api/admin/leaderboard",
+  auth: "/api/v1/auth/admin/login",
+  status: "/api/v1/admin/status",
+  timer: "/api/v1/admin/timer",
+  round: "/api/v1/admin/round",
+  flashCrash: "/api/v1/admin/flash-crash",
+  leaderboard: "/api/v1/admin/leaderboard",
+  snapshot: "/api/v1/admin/leaderboard/snapshot",
+  finalBacktest: "/api/v1/admin/final-backtest",
 };
 
 export const uploadFieldName = "file";
@@ -42,11 +44,12 @@ export const csvFormats = {
       `exactly ${PREDICTION_ROWS} rows, timestamps 1 to ${PREDICTION_ROWS}`,
     ],
   },
-  position: {
-    header: "timestamp,position",
+  signal: {
+    header: "timestamp,signal",
     example: ["1,0.85", "2,-0.40", "3,0.00"],
     notes: [
-      "position between -1.0 (short) and +1.0 (long)",
+      "signal between -1.0 (full short) and +1.0 (full long)",
+      "0.0 means flat, no position",
       `exactly ${PREDICTION_ROWS} rows, timestamps 1 to ${PREDICTION_ROWS}`,
     ],
   },

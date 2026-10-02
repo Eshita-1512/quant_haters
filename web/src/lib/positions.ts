@@ -24,7 +24,7 @@ export function parsePositions(text: string): PositionBook | { error: string } {
   const header = rows[0].split(",").map((cell) => cell.trim().toLowerCase());
   const valueIndex = header.findIndex((cell) => cell === "position" || cell === "signal");
   const tsIndex = header.indexOf("timestamp");
-  if (valueIndex < 0 || tsIndex < 0) return { error: "Expected columns: timestamp,position" };
+  if (valueIndex < 0 || tsIndex < 0) return { error: "Expected columns: timestamp,signal" };
 
   const problems: string[] = [];
   const entries: [number, number][] = [];

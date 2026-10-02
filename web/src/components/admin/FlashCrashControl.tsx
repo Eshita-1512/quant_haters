@@ -16,24 +16,21 @@ export default function FlashCrashControl({ status, busy, run }: FlashCrashContr
   const roundTwo = status.rounds.find((round) => round.code === "R2");
   const [message, setMessage] = useState("");
   const [minutes, setMinutes] = useState<string | null>(null);
-  const [confirm, setConfirm] = useState<"on" | "off" | null>(null);
+  const [confirm, setConfirm] = useState(false);
   const active = status.flash_crash_active;
   const locked = active && status.current_round === "R2";
+  const available = !active && status.current_round === "R1";
   const durationMinutes = minutes ?? String(Math.round((roundTwo?.duration_seconds ?? 6300) / 60));
 
   const apply = async () => {
-    if (confirm === "on") {
-      await run("Flash crash ON", () =>
-        adminApi.flashCrash({
-          active: true,
-          message: message.trim() || undefined,
-          duration_seconds: Math.max(1, Number(durationMinutes) || 0) * 60,
-        }),
-      );
-    } else if (confirm === "off") {
-      await run("Flash crash OFF", () => adminApi.flashCrash({ active: false }));
-    }
-    setConfirm(null);
+    await run("Flash crash ON", () =>
+      adminApi.flashCrash({
+        active: true,
+        message: message.trim() || undefined,
+        duration_seconds: Math.max(1, Number(durationMinutes) || 0) * 60,
+      }),
+    );
+    setConfirm(false);
   };
 
   return (
@@ -58,18 +55,20 @@ export default function FlashCrashControl({ status, busy, run }: FlashCrashContr
                 ? "Crash live"
                 : status.current_round === "R3"
                   ? "Round 3 runs on the recovered market"
-                  : "Participants see the normal market"}
+                  : status.current_round === "R1"
+                    ? "Participants see the normal market"
+                    : "The crash can only be triggered during Round 1"}
           </p>
         </div>
         <Switch
           checked={active}
           label="Flash crash"
-          disabled={busy !== null || locked}
-          onChange={(next) => setConfirm(next ? "on" : "off")}
+          disabled={busy !== null || !available}
+          onChange={(next) => setConfirm(next)}
         />
       </div>
 
-      {!active && (
+      {available && (
         <>
           <label className="flex flex-col gap-1.5">
             <span className="text-xs text-muted">Alert message (optional)</span>
@@ -108,18 +107,15 @@ export default function FlashCrashControl({ status, busy, run }: FlashCrashContr
 
       {confirm && (
         <ConfirmDialog
-          title={confirm === "on" ? "Trigger the flash crash?" : "Turn the flash crash off?"}
-          confirmLabel={confirm === "on" ? "Crash the market" : "Turn off"}
-          tone={confirm === "on" ? "danger" : "default"}
+          title="Trigger the flash crash?"
+          confirmLabel="Crash the market"
+          tone="danger"
           busy={busy !== null}
-          onCancel={() => setConfirm(null)}
+          onCancel={() => setConfirm(false)}
           onConfirm={apply}
         >
-          {confirm === "on"
-            ? `Every team sees the crash sequence on their next refresh. ${
-                status.current_round === "R3" ? "Round 3 closes and everyone moves back to Round 2" : "Round 1 closes and Round 2 starts"
-              } with ${durationMinutes} minutes on the clock.`
-            : "Participants leave crash mode and return to the normal theme. The Round 2 timer keeps running."}
+          Every team sees the crash sequence on their next refresh. Round 1 closes and Round 2 starts with{" "}
+          {durationMinutes} minutes on the clock.
         </ConfirmDialog>
       )}
     </div>

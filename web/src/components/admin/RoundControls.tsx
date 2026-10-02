@@ -48,7 +48,7 @@ export default function RoundControls({ status, busy, run }: RoundControlsProps)
               <span className="w-7 font-mono text-sm font-semibold">{round.code}</span>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium">{round.name.replace(/^Round \d+: /, "")}</p>
-                <p className="text-xs text-muted">{round.submission_type === "position" ? "Positions" : "Predictions"}</p>
+                <p className="text-xs text-muted">{round.submission_type === "signal" ? "Signals" : "Predictions"}</p>
               </div>
               <span
                 className={`shrink-0 rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider ${phaseTone[round.phase]}`}

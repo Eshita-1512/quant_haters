@@ -13,7 +13,7 @@ import Panel from "@/components/Panel";
 import { useCountdown } from "@/hooks/useCountdown";
 import { useEventStatus } from "@/hooks/useEventStatus";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
-import { formatScore, isUploadPhase, phaseLabels } from "@/lib/format";
+import { isUploadPhase, phaseLabels } from "@/lib/format";
 import { session, useIntroSeen } from "@/lib/session";
 import type { EventStatus, UploadSuccess } from "@/lib/types";
 
@@ -21,7 +21,7 @@ interface SubmissionRecord {
   id: number;
   filename: string;
   round: string;
-  score: number;
+  submissionNumber: number;
   at: string;
 }
 
@@ -54,7 +54,7 @@ export default function DashboardPage() {
   const { status, error, clockOffsetMs } = useEventStatus(ready);
   const introSeen = useIntroSeen();
   const [history, setHistory] = useState<SubmissionRecord[]>([]);
-  const [remaining, setRemaining] = useState<{ round: string; count: number } | null>(null);
+  const [progress, setProgress] = useState<{ round: string; submitted: number; remaining: number } | null>(null);
   const [draft, setDraft] = useState<File | null>(null);
 
   const frozen =
@@ -91,7 +91,7 @@ export default function DashboardPage() {
     session.markIntroSeen(status.current_round === "R3" ? "R3" : "R2");
   };
 
-  const onScored = (result: UploadSuccess, filename: string) => {
+  const onSubmitted = (result: UploadSuccess, filename: string) => {
     if (!status) return;
     setHistory((previous) =>
       [
@@ -99,23 +99,23 @@ export default function DashboardPage() {
           id: Date.now(),
           filename,
           round: status.current_round,
-          score: result.score,
+          submissionNumber: result.submission_number,
           at: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
         },
         ...previous,
       ].slice(0, 10),
     );
-    if (result.submissions_remaining !== undefined) {
-      setRemaining({ round: status.current_round, count: result.submissions_remaining });
-    }
+    setProgress({
+      round: status.current_round,
+      submitted: result.submission_number,
+      remaining: result.submissions_remaining,
+    });
   };
 
-  const remainingThisRound = status && remaining?.round === status.current_round ? remaining.count : null;
+  const roundProgress = status && progress?.round === status.current_round ? progress : null;
+  const remainingThisRound = roundProgress?.remaining ?? null;
+  const submittedThisRound = roundProgress?.submitted ?? null;
   const roundHistory = status ? history.filter((item) => item.round === status.current_round) : [];
-  const bestThisRound = roundHistory.reduce<number | null>(
-    (best, item) => (best === null || item.score > best ? item.score : best),
-    null,
-  );
 
   const title =
     mode === "crash" ? "FLASH CRASH" : mode === "alpha" ? "Alpha desk" : "Dashboard";
@@ -155,23 +155,20 @@ export default function DashboardPage() {
                 <Panel title="Submit your book" className="border-alpha/25">
                   <FileUpload
                     key={status.current_round}
+                    round={status.current_round}
                     disabledReason={uploadBlockReason(status, seconds, remainingThisRound)}
-                    onScored={onScored}
+                    onSubmitted={onSubmitted}
                     onFileChange={setDraft}
-                    submitLabel="Submit positions"
+                    submitLabel="Submit signals"
                     variant="alpha"
                   />
                 </Panel>
                 <Panel title="Desk stats">
                   <dl className="grid grid-cols-2 gap-4">
                     <div>
-                      <dt className="text-xs text-muted">Best R3 score</dt>
-                      <dd
-                        className={`tabular mt-1 font-mono text-2xl font-semibold ${
-                          bestThisRound !== null && bestThisRound < 0 ? "text-down" : "text-alpha-2"
-                        }`}
-                      >
-                        {formatScore(bestThisRound)}
+                      <dt className="text-xs text-muted">Books submitted</dt>
+                      <dd className="tabular mt-1 font-mono text-2xl font-semibold text-alpha-2">
+                        {submittedThisRound ?? "--"}
                       </dd>
                     </div>
                     <div>
@@ -195,17 +192,12 @@ export default function DashboardPage() {
                   <p className="text-sm text-faint">No books submitted from this browser yet.</p>
                 ) : (
                   <ul className="divide-y divide-line">
-                    {roundHistory.map((item, index) => (
+                    {roundHistory.map((item) => (
                       <li key={item.id} className="flex items-center gap-3 py-2 font-mono text-xs">
-                        <span className="text-faint">#{roundHistory.length - index}</span>
+                        <span className="text-faint">#{item.submissionNumber}</span>
                         <span className="text-faint">{item.at}</span>
                         <span className="truncate text-text">{item.filename}</span>
-                        <span
-                          className={`tabular ml-auto font-semibold ${item.score < 0 ? "text-down" : "text-alpha-2"}`}
-                        >
-                          {item.score >= 0 ? "+" : ""}
-                          {formatScore(item.score)}
-                        </span>
+                        <span className="ml-auto font-semibold text-alpha-2">Received</span>
                       </li>
                     ))}
                   </ul>
@@ -245,8 +237,8 @@ export default function DashboardPage() {
                 <Panel title="This round">
                   <dl className="grid grid-cols-2 gap-4">
                     <div>
-                      <dt className="text-xs text-muted">Best score</dt>
-                      <dd className="tabular mt-1 font-mono text-xl font-semibold">{formatScore(bestThisRound)}</dd>
+                      <dt className="text-xs text-muted">Submitted</dt>
+                      <dd className="tabular mt-1 font-mono text-xl font-semibold">{submittedThisRound ?? "--"}</dd>
                     </div>
                     <div>
                       <dt className="text-xs text-muted">Submissions left</dt>
@@ -257,15 +249,16 @@ export default function DashboardPage() {
               </div>
 
               <Panel
-                title={status.submission_type === "position" ? "Upload positions" : "Upload predictions"}
+                title={status.submission_type === "signal" ? "Upload signals" : "Upload predictions"}
                 aside={<span className="font-mono text-[11px] text-faint">{status.current_round}</span>}
                 className="lg:col-span-2"
               >
                 <div className="grid gap-6 md:grid-cols-[1.4fr_1fr]">
                   <FileUpload
                     key={status.current_round}
+                    round={status.current_round}
                     disabledReason={uploadBlockReason(status, seconds, remainingThisRound)}
-                    onScored={onScored}
+                    onSubmitted={onSubmitted}
                   />
                   <div>
                     <h3 className="mb-3 text-sm font-medium">Required format</h3>
@@ -284,7 +277,7 @@ export default function DashboardPage() {
                           <span className="text-faint">{item.at}</span>
                           <span className="text-muted">{item.round}</span>
                           <span className="truncate text-text">{item.filename}</span>
-                          <span className="tabular ml-auto text-up">{formatScore(item.score)}</span>
+                          <span className="tabular ml-auto text-up">#{item.submissionNumber} received</span>
                         </li>
                       ))}
                     </ul>

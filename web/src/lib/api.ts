@@ -10,10 +10,13 @@ import type {
   AuthResponse,
   DownloadResponse,
   EventStatus,
+  FinalBacktestResult,
   FlashCrashRequest,
   RoundCode,
+  SnapshotResult,
   StartRoundRequest,
   TimerRequest,
+  TokenResponse,
   UploadSuccess,
 } from "@/lib/types";
 
@@ -115,15 +118,36 @@ async function runMock<T>(scope: Scope, fn: () => T | Promise<T>): Promise<T> {
   }
 }
 
+async function login(path: string, payload: AuthRequest | AdminAuthRequest): Promise<AuthResponse> {
+  const { access_token } = await request<TokenResponse>(path, { method: "POST", json: payload, scope: "none" });
+  if (!access_token) throw new ApiError("The server did not return a session token.", 0);
+  return { token: access_token };
+}
+
+function roundNumber(round: RoundCode): number {
+  return Number(round.slice(1));
+}
+
+// The backend returns download links relative to its own origin.
+function backendUrl(url: string): string {
+  return url.startsWith("/") ? `${config.apiBaseUrl}${url}` : url;
+}
+
 const httpApi = {
-  login: (payload: AuthRequest) =>
-    request<AuthResponse>(endpoints.auth, { method: "POST", json: payload, scope: "none" }),
+  login: (payload: AuthRequest) => login(endpoints.auth, payload),
   getStatus: () => request<EventStatus>(endpoints.status),
-  getDownload: () => request<DownloadResponse>(endpoints.download),
-  upload: (file: File) => {
+  getDownload: async () => {
+    const download = await request<DownloadResponse>(endpoints.download);
+    return { ...download, download_url: backendUrl(download.download_url) };
+  },
+  upload: (file: File, round: RoundCode) => {
     const form = new FormData();
     form.append(uploadFieldName, file);
-    return request<UploadSuccess>(endpoints.upload, { method: "POST", body: form, timeoutMs: 60000 });
+    return request<UploadSuccess>(endpoints.upload(roundNumber(round)), {
+      method: "POST",
+      body: form,
+      timeoutMs: 60000,
+    });
   },
 };
 
@@ -131,23 +155,50 @@ const mockApi: typeof httpApi = {
   login: (payload) => runMock("none", () => mockBackend.login(payload)),
   getStatus: () => runMock("team", () => mockBackend.getStatus(session.getToken())),
   getDownload: () => runMock("team", () => mockBackend.getDownload(session.getToken())),
-  upload: (file) => runMock("team", () => mockBackend.upload(session.getToken(), file)),
+  upload: (file, round) => runMock("team", () => mockBackend.upload(session.getToken(), file, round)),
 };
 
+type RawAdminStatus = Omit<AdminStatus, "current_round"> & { current_round: RoundCode | null };
+type RawLeaderboardEntry = Omit<AdminLeaderboardEntry, "score"> & { score: number | string };
+
+async function getAdminStatus(): Promise<AdminStatus> {
+  return checkAdminStatus(await request<RawAdminStatus>(adminEndpoints.status, { scope: "admin" }));
+}
+
+function checkAdminStatus(status: RawAdminStatus): AdminStatus {
+  if (status.current_round === null) {
+    throw new ApiError("The server has no current round. Seed the database to configure the event.", 409);
+  }
+  return status as AdminStatus;
+}
+
 const httpAdminApi = {
-  login: (payload: AdminAuthRequest) =>
-    request<AuthResponse>(adminEndpoints.auth, { method: "POST", json: payload, scope: "none" }),
-  getStatus: () => request<AdminStatus>(adminEndpoints.status, { scope: "admin" }),
-  timer: (payload: TimerRequest) =>
-    request<AdminStatus>(adminEndpoints.timer, { method: "POST", json: payload, scope: "admin" }),
-  startRound: (payload: StartRoundRequest) =>
-    request<AdminStatus>(adminEndpoints.round, { method: "POST", json: payload, scope: "admin" }),
-  flashCrash: (payload: FlashCrashRequest) =>
-    request<AdminStatus>(adminEndpoints.flashCrash, { method: "POST", json: payload, scope: "admin" }),
-  getLeaderboard: (round: RoundCode) =>
-    request<AdminLeaderboardEntry[]>(`${adminEndpoints.leaderboard}?round=${encodeURIComponent(round)}`, {
-      scope: "admin",
-    }),
+  login: (payload: AdminAuthRequest) => login(adminEndpoints.auth, payload),
+  getStatus: getAdminStatus,
+  timer: async (payload: TimerRequest) =>
+    checkAdminStatus(
+      await request<RawAdminStatus>(adminEndpoints.timer, { method: "POST", json: payload, scope: "admin" }),
+    ),
+  startRound: async (payload: StartRoundRequest) =>
+    checkAdminStatus(
+      await request<RawAdminStatus>(adminEndpoints.round, { method: "POST", json: payload, scope: "admin" }),
+    ),
+  // The flash crash endpoint returns a short receipt, so read the full status afterwards.
+  flashCrash: async (payload: FlashCrashRequest) => {
+    await request<unknown>(adminEndpoints.flashCrash, { method: "POST", json: payload, scope: "admin" });
+    return getAdminStatus();
+  },
+  // Scores arrive as decimal strings to keep their precision.
+  getLeaderboard: async (round: RoundCode) => {
+    const entries = await request<RawLeaderboardEntry[]>(
+      `${adminEndpoints.leaderboard}?round=${encodeURIComponent(round)}`,
+      { scope: "admin" },
+    );
+    return entries.map((entry): AdminLeaderboardEntry => ({ ...entry, score: Number(entry.score) }));
+  },
+  publishSnapshot: () => request<SnapshotResult>(adminEndpoints.snapshot, { method: "POST", scope: "admin" }),
+  runFinalBacktest: () =>
+    request<FinalBacktestResult>(adminEndpoints.finalBacktest, { method: "POST", scope: "admin", timeoutMs: 60000 }),
 };
 
 const mockAdminApi: typeof httpAdminApi = {
@@ -157,6 +208,8 @@ const mockAdminApi: typeof httpAdminApi = {
   startRound: (payload) => runMock("admin", () => mockAdminBackend.startRound(adminSession.getToken(), payload)),
   flashCrash: (payload) => runMock("admin", () => mockAdminBackend.flashCrash(adminSession.getToken(), payload)),
   getLeaderboard: (round) => runMock("admin", () => mockAdminBackend.getLeaderboard(adminSession.getToken(), round)),
+  publishSnapshot: () => runMock("admin", () => mockAdminBackend.publishSnapshot(adminSession.getToken())),
+  runFinalBacktest: () => runMock("admin", () => mockAdminBackend.runFinalBacktest(adminSession.getToken())),
 };
 
 export const api = config.useMocks ? mockApi : httpApi;

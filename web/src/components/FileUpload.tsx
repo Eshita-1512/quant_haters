@@ -1,12 +1,13 @@
 import { useRef, useState, type DragEvent } from "react";
 import { api } from "@/lib/api";
 import { config } from "@/lib/config";
-import { formatBytes, formatScore } from "@/lib/format";
-import type { UploadSuccess } from "@/lib/types";
+import { formatBytes } from "@/lib/format";
+import type { RoundCode, UploadSuccess } from "@/lib/types";
 
 interface FileUploadProps {
+  round: RoundCode;
   disabledReason: string | null;
-  onScored?: (result: UploadSuccess, filename: string) => void;
+  onSubmitted?: (result: UploadSuccess, filename: string) => void;
   onFileChange?: (file: File | null) => void;
   submitLabel?: string;
   variant?: "default" | "alpha";
@@ -28,8 +29,9 @@ function checkFile(file: File): string | null {
 }
 
 export default function FileUpload({
+  round,
   disabledReason,
-  onScored,
+  onSubmitted,
   onFileChange,
   submitLabel = "Submit predictions",
   variant = "default",
@@ -74,9 +76,9 @@ export default function FileUpload({
     if (!file || disabled) return;
     setState({ kind: "uploading" });
     try {
-      const result = await api.upload(file);
+      const result = await api.upload(file, round);
       setState({ kind: "success", result });
-      onScored?.(result, file.name);
+      onSubmitted?.(result, file.name);
       setFile(null);
       if (inputRef.current) inputRef.current.value = "";
     } catch (error) {
@@ -145,7 +147,7 @@ export default function FileUpload({
           {uploading ? (
             <>
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              Uploading and scoring...
+              Uploading...
             </>
           ) : (
             submitLabel
@@ -165,35 +167,17 @@ export default function FileUpload({
       <div aria-live="polite">
         {state.kind === "success" && (
           <div className="rounded-lg border border-up/40 bg-up-soft p-4">
-            <div className="flex items-baseline justify-between gap-4">
-              <p className="text-sm font-semibold text-up">{state.result.message || "Scored!"}</p>
-              <p className="tabular font-mono text-2xl font-semibold text-up">{formatScore(state.result.score)}</p>
-            </div>
-            <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-xs text-muted sm:grid-cols-4">
-              {state.result.balanced_accuracy !== undefined && (
-                <div>
-                  <dt>Bal. accuracy</dt>
-                  <dd className="tabular text-text">{formatScore(state.result.balanced_accuracy)}</dd>
-                </div>
-              )}
-              {state.result.mcc !== undefined && (
-                <div>
-                  <dt>MCC</dt>
-                  <dd className="tabular text-text">{formatScore(state.result.mcc)}</dd>
-                </div>
-              )}
-              {state.result.submission_number !== undefined && (
-                <div>
-                  <dt>Submission</dt>
-                  <dd className="tabular text-text">#{state.result.submission_number}</dd>
-                </div>
-              )}
-              {state.result.submissions_remaining !== undefined && (
-                <div>
-                  <dt>Remaining</dt>
-                  <dd className="tabular text-text">{state.result.submissions_remaining}</dd>
-                </div>
-              )}
+            <p className="text-sm font-semibold text-up">Submission received</p>
+            <p className="mt-1 text-xs text-muted">Scores stay hidden until the organizers publish the leaderboard.</p>
+            <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-xs text-muted">
+              <div>
+                <dt>Submission</dt>
+                <dd className="tabular text-text">#{state.result.submission_number}</dd>
+              </div>
+              <div>
+                <dt>Remaining</dt>
+                <dd className="tabular text-text">{state.result.submissions_remaining}</dd>
+              </div>
             </dl>
           </div>
         )}

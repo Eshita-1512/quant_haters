@@ -8,9 +8,11 @@ import type {
   AuthResponse,
   DownloadResponse,
   EventStatus,
+  FinalBacktestResult,
   FlashCrashRequest,
   RoundCode,
   RoundPhase,
+  SnapshotResult,
   StartRoundRequest,
   SubmissionType,
   TimerRequest,
@@ -36,7 +38,7 @@ interface RoundDefinition {
 const ROUNDS: RoundDefinition[] = [
   { code: "R1", name: "Round 1: Foundation", minutes: 75, submissionType: "prediction" },
   { code: "R2", name: "Round 2: Signal Hunt", minutes: 105, submissionType: "prediction" },
-  { code: "R3", name: "Round 3: Alpha", minutes: 60, submissionType: "position" },
+  { code: "R3", name: "Round 3: Alpha", minutes: 60, submissionType: "signal" },
 ];
 
 const RIVALS = [
@@ -267,7 +269,7 @@ function validateCsv(text: string, type: SubmissionType): string | null {
     .filter((line) => line.length > 0);
   if (rows.length === 0) return "Missing columns: timestamp";
   const header = rows[0].split(",").map((h) => h.trim().toLowerCase());
-  const valueColumn = type === "prediction" ? "prediction" : "position";
+  const valueColumn = type === "prediction" ? "prediction" : "signal";
   const required = ["timestamp", valueColumn];
   const missing = required.filter((column) => !header.includes(column));
   if (missing.length > 0) return `Missing columns: ${missing.join(", ")}`;
@@ -303,7 +305,7 @@ function validateCsv(text: string, type: SubmissionType): string | null {
         if (confidence < 0 || confidence > 1) return `Row ${rowNumber}: confidence must be between 0.0 and 1.0.`;
       }
     } else if (value < -1 || value > 1) {
-      return `Row ${rowNumber}: position must be between -1.0 and 1.0.`;
+      return `Row ${rowNumber}: signal must be between -1.0 and 1.0.`;
     }
   }
   return null;
@@ -334,7 +336,7 @@ function buildAdminStatus(state: MockState): AdminStatus {
       ends_at: index === state.roundIndex ? new Date(now + remaining).toISOString() : null,
     })),
     teams_total: TOTAL_TEAMS,
-    submissions_current_round: submissions,
+    submissions_count: submissions,
   };
 }
 
@@ -389,7 +391,7 @@ export const mockBackend = {
     });
   },
 
-  async upload(token: string | null, file: File): Promise<UploadSuccess> {
+  async upload(token: string | null, file: File, requestedRound: RoundCode): Promise<UploadSuccess> {
     const team = teamFromToken(token);
     await delay(null, 700 + Math.random() * 700);
     const state = loadState();
@@ -397,6 +399,7 @@ export const mockBackend = {
     const roundNumber = state.roundIndex + 1;
     const record = teamRecord(state, team);
     if (!file.name.toLowerCase().endsWith(".csv")) throw new ApiError("Only .csv files are accepted.", 400);
+    if (requestedRound !== round.code) throw new ApiError(`Round ${requestedRound.slice(1)} is closed.`, 400);
     if (!isOpen(state)) throw new ApiError(`Round ${roundNumber} is closed.`, 400);
     if (record.submissions[round.code] >= MAX_SUBMISSIONS) {
       throw new ApiError(`Submission limit (${MAX_SUBMISSIONS}) reached for this round.`, 400);
@@ -414,20 +417,13 @@ export const mockBackend = {
     record.last[round.code] = Date.now();
     saveState(state);
 
-    const result: UploadSuccess = {
+    return {
       status: "success",
-      message: "Scored!",
       team_id: team,
       round: roundNumber,
-      score,
       submission_number: submissionNumber,
       submissions_remaining: MAX_SUBMISSIONS - submissionNumber,
     };
-    if (round.submissionType === "prediction") {
-      result.balanced_accuracy = Number((0.45 + rand() * 0.2).toFixed(4));
-      result.mcc = Number((rand() * 0.3 - 0.05).toFixed(4));
-    }
-    return result;
   },
 };
 
@@ -507,25 +503,19 @@ export const mockAdminBackend = {
 
   async flashCrash(token: string | null, { active, message, duration_seconds }: FlashCrashRequest): Promise<AdminStatus> {
     requireAdmin(token);
-    if (!active && loadState().roundIndex === 1) {
-      throw new ApiError("The crash stays on for all of Round 2. Restart Round 1 to undo it.", 409);
+    if (!active) throw new ApiError("The crash stays on for all of Round 2. Restart Round 1 to undo it.", 409);
+    const current = loadState();
+    if (current.flashActive || current.roundIndex !== 0) {
+      throw new ApiError("Flash Crash can only start once from Round 1.", 409);
     }
     const state = mutate((s) => {
-      if (active) {
-        const seconds = duration_seconds && duration_seconds > 0 ? Math.round(duration_seconds) : s.durations.R2;
-        s.roundIndex = 1;
-        s.durations.R2 = seconds;
-        s.flashActive = true;
-        s.flashMessage = message?.trim() || DEFAULT_FLASH_MESSAGE;
-        s.flashTriggeredAt = Date.now();
-        startTimer(s, seconds, "flash_crash");
-      } else {
-        s.flashActive = false;
-        s.flashMessage = null;
-        s.flashTriggeredAt = null;
-        if (s.phase === "flash_crash") s.phase = "live";
-        if (s.resumePhase === "flash_crash") s.resumePhase = "live";
-      }
+      const seconds = duration_seconds && duration_seconds > 0 ? Math.round(duration_seconds) : s.durations.R2;
+      s.roundIndex = 1;
+      s.durations.R2 = seconds;
+      s.flashActive = true;
+      s.flashMessage = message?.trim() || DEFAULT_FLASH_MESSAGE;
+      s.flashTriggeredAt = Date.now();
+      startTimer(s, seconds, "flash_crash");
     });
     return delay(buildAdminStatus(state), 150);
   },
@@ -534,7 +524,7 @@ export const mockAdminBackend = {
     requireAdmin(token);
     const state = loadState();
     const index = ROUNDS.findIndex((definition) => definition.code === round);
-    const entries: AdminLeaderboardEntry[] = [];
+    const entries: Omit<AdminLeaderboardEntry, "rank">[] = [];
     const simulated = index <= state.roundIndex;
     TEAM_CODES.forEach((code, i) => {
       const record = state.teams[code];
@@ -573,7 +563,28 @@ export const mockAdminBackend = {
       });
     });
     entries.sort((a, b) => b.score - a.score);
-    return delay(entries, 120);
+    return delay(entries.map((entry, index) => ({ ...entry, rank: index + 1 })), 120);
+  },
+
+  async publishSnapshot(token: string | null): Promise<SnapshotResult> {
+    const round = currentRound(loadState());
+    const entries = await this.getLeaderboard(token, round.code);
+    return delay({ status: "success", snapshot_id: `mock-${round.code}-${Date.now()}`, entries: entries.length });
+  },
+
+  async runFinalBacktest(token: string | null): Promise<FinalBacktestResult> {
+    requireAdmin(token);
+    if (loadState().roundIndex < 2) {
+      throw new ApiError("One or more active teams are missing a valid R3 submission.", 409);
+    }
+    const entries = await this.getLeaderboard(token, "R3");
+    const rankings = entries.map((entry) => ({ team: entry.team, score: Number((entry.score * 0.9).toFixed(4)) }));
+    rankings.sort((a, b) => b.score - a.score || a.team.localeCompare(b.team));
+    return delay({
+      status: "success",
+      round: "R3",
+      rankings: rankings.map((entry, index) => ({ rank: index + 1, ...entry })),
+    });
   },
 
   reset() {

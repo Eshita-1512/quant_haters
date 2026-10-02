@@ -2,7 +2,7 @@ export type RoundCode = "R1" | "R2" | "R3";
 
 export type RoundPhase = "scheduled" | "live" | "flash_crash" | "paused" | "completed";
 
-export type SubmissionType = "prediction" | "position";
+export type SubmissionType = "prediction" | "signal";
 
 export interface AuthRequest {
   team_id: string;
@@ -11,6 +11,11 @@ export interface AuthRequest {
 
 export interface AuthResponse {
   token: string;
+}
+
+export interface TokenResponse {
+  access_token: string;
+  token_type: string;
 }
 
 export interface AssignedStock {
@@ -41,23 +46,11 @@ export interface DownloadResponse {
 
 export interface UploadSuccess {
   status: "success";
-  message?: string;
-  score: number;
-  team_id?: string;
-  round?: number | RoundCode;
-  balanced_accuracy?: number;
-  mcc?: number;
-  submission_number?: number;
-  submissions_remaining?: number;
+  team_id: string;
+  round: number;
+  submission_number: number;
+  submissions_remaining: number;
 }
-
-export interface UploadError {
-  status: "error";
-  message: string;
-  code?: number;
-}
-
-export type UploadResponse = UploadSuccess | UploadError;
 
 export interface AdminAuthRequest {
   username: string;
@@ -85,8 +78,8 @@ export interface AdminStatus {
   flash_crash_message: string | null;
   flash_crash_triggered_at: string | null;
   rounds: AdminRound[];
-  teams_total?: number;
-  submissions_current_round?: number;
+  teams_total: number;
+  submissions_count: number;
 }
 
 export type TimerAction = "pause" | "resume" | "extend" | "set" | "end";
@@ -108,9 +101,28 @@ export interface FlashCrashRequest {
 }
 
 export interface AdminLeaderboardEntry {
+  rank: number;
   team: string;
   team_code: string;
   score: number;
   submissions: number;
   last_submission_at: string | null;
+}
+
+export interface SnapshotResult {
+  status: "success";
+  snapshot_id: string;
+  entries: number;
+}
+
+export interface FinalBacktestEntry {
+  rank: number;
+  team: string;
+  score: number;
+}
+
+export interface FinalBacktestResult {
+  status: "success";
+  round: "R3";
+  rankings: FinalBacktestEntry[];
 }
