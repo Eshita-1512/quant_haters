@@ -1,0 +1,8 @@
+rank,member,total,schema,gbm_fidelity,flash_crash,class_balance,feature_quality,cross_file,issues
+1,AERION_X,68.0,3.0,20.0,0.0,15.0,15.0,15.0,Master missing columns: ['flash_crash_day'] (-5 pts); PUBLIC FILE LEAKS SECRET COLUMNS: {'regime'} (-4 pts); Missing flash_crash_day column (-20 pts)
+2,CHRP,68.0,3.0,20.0,0.0,15.0,15.0,15.0,Master missing columns: ['flash_crash_day'] (-5 pts); MISSING: round1_public file not found (-4 pts); Missing flash_crash_day column (-20 pts)
+3,GLACIER_GAS,68.0,3.0,20.0,0.0,15.0,15.0,15.0,Master missing columns: ['flash_crash_day'] (-5 pts); MISSING: round1_public file not found (-4 pts); Missing flash_crash_day column (-20 pts)
+4,KESTREL_EM,68.0,3.0,20.0,0.0,15.0,15.0,15.0,Master missing columns: ['flash_crash_day'] (-5 pts); MISSING: round1_public file not found (-4 pts); Missing flash_crash_day column (-20 pts)
+5,MERIDIAN_EM,68.0,3.0,20.0,0.0,15.0,15.0,15.0,Master missing columns: ['flash_crash_day'] (-5 pts); MISSING: round1_public file not found (-4 pts); Missing flash_crash_day column (-20 pts)
+6,NOVA_X (1),68.0,3.0,20.0,0.0,15.0,15.0,15.0,Master missing columns: ['flash_crash_day'] (-5 pts); MISSING: round1_public file not found (-4 pts); Missing flash_crash_day column (-20 pts)
+7,STOCK%20R,68.0,3.0,20.0,0.0,15.0,15.0,15.0,Master missing columns: ['flash_crash_day'] (-5 pts); MISSING: round1_public file not found (-4 pts); Missing flash_crash_day column (-20 pts)
