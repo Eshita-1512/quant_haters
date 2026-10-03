@@ -2,12 +2,12 @@ import uuid
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.dependencies import get_current_team_id
-from app.models import EventState, Round, Stock, TeamAssignment
+from app.models import EventState, Round, Stock, Submission, TeamAssignment
 from app.schemas.event import EventStatus, StatusStock
 from app.services.event_control import display_ends_at, effective_round_phase, round_remaining_seconds
 
@@ -30,6 +30,15 @@ def get_status(
         raise HTTPException(status_code=404, detail="No active event assignment found.")
     state, round_, _assignment, stock = row
     now = datetime.now(UTC)
+    sub_count = (
+        db.scalar(
+            select(func.count(Submission.id)).where(
+                Submission.team_id == team_id, Submission.round_id == round_.id
+            )
+        )
+        or 0
+    )
+    sub_remaining = max(0, round_.max_submissions_per_team - sub_count)
     return EventStatus(
         state_version=state.state_version,
         server_time=now,
@@ -43,6 +52,8 @@ def get_status(
         assigned_stock=StatusStock(code=stock.stock_code, name=stock.display_name),
         download_available=True,
         submission_type=round_.submission_type,
+        submissions_count=sub_count,
+        submissions_remaining=sub_remaining,
     )
 
 

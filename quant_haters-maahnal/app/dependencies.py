@@ -4,11 +4,11 @@ from datetime import UTC, datetime
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import AdminAuthSession, AdminUser, AuthSession, EventState, Stock, Team, TeamAssignment
+from app.models import AdminAuthSession, AdminUser, AuthSession, EventState, Stock, Team, TeamAssignment, DatasetRelease
 from app.schemas.team import StockInfo, TeamProfile
 from app.security import InvalidTokenError, decode_access_token
 
@@ -98,6 +98,25 @@ def get_current_team_profile(
     if row is None:
         raise HTTPException(status_code=404, detail="No active team assignment found.")
     team, assignment, stock = row
+    
+    state = db.scalar(select(EventState).where(EventState.id == 1))
+    download_available = False
+    if state and state.current_round_id:
+        release_type = "flash_crash" if state.flash_crash_active else "standard"
+        download_available = db.scalar(
+            select(DatasetRelease.id)
+            .join(TeamAssignment, TeamAssignment.id == DatasetRelease.assignment_id)
+            .where(
+                TeamAssignment.team_id == team_id,
+                DatasetRelease.round_id == state.current_round_id,
+                DatasetRelease.release_type == release_type,
+                DatasetRelease.is_active.is_(True),
+                DatasetRelease.available_from <= datetime.now(UTC),
+                or_(DatasetRelease.available_until.is_(None), DatasetRelease.available_until > datetime.now(UTC)),
+            )
+            .limit(1)
+        ) is not None
+
     return TeamProfile(
         team_id=team.team_code,
         team_name=team.team_name,
@@ -106,4 +125,5 @@ def get_current_team_profile(
         train_end=assignment.train_end,
         predict_start=assignment.predict_start,
         predict_end=assignment.predict_end,
+        download_available=download_available,
     )

@@ -52,7 +52,6 @@ def _rate_limit_row_statement(team_id: uuid.UUID):
 def enforce_submission_rate_limit(db: Session, team_id: uuid.UUID, now: datetime) -> None:
     created_team_id = db.execute(_rate_limit_insert_statement(team_id, now)).scalar_one_or_none()
     if created_team_id is not None:
-        db.commit()
         return
 
     limiter = db.scalar(_rate_limit_row_statement(team_id))
@@ -63,8 +62,24 @@ def enforce_submission_rate_limit(db: Session, team_id: uuid.UUID, now: datetime
         db.rollback()
         raise SubmissionRateLimitError(retry_after)
     limiter.last_attempt_at = now
-    db.commit()
 
+
+import functools
+
+@functools.lru_cache(maxsize=1)
+def _load_all_master_validation(path_str: str, required_tuple: tuple) -> dict:
+    from pathlib import Path
+    by_key = {}
+    with Path(path_str).open(newline="", encoding="utf-8") as handle:
+        reader = csv.DictReader(handle)
+        if not set(required_tuple) <= set(reader.fieldnames or []):
+            raise ValidationDataError("Master validation data has an invalid schema.")
+        for row in reader:
+            key = (row["team_id"], row["stock_id"])
+            if key not in by_key:
+                by_key[key] = {}
+            by_key[key][int(row["master_timestamp"])] = row
+    return by_key
 
 def _validation_targets(
     team_code: str, stock_code: str, start: int, round_number: int
@@ -75,14 +90,8 @@ def _validation_targets(
     column = "target_r3" if round_number == 3 else "target_r1r2"
     required = {"team_id", "stock_id", "master_timestamp", column}
     try:
-        by_timestamp: dict[int, dict[str, str]] = {}
-        with path.open(newline="", encoding="utf-8") as handle:
-            reader = csv.DictReader(handle)
-            if not required <= set(reader.fieldnames or []):
-                raise ValidationDataError("Master validation data has an invalid schema.")
-            for row in reader:
-                if row["team_id"] == team_code and row["stock_id"] == stock_code:
-                    by_timestamp[int(row["master_timestamp"])] = row
+        all_data = _load_all_master_validation(str(path), tuple(sorted(required)))
+        by_timestamp = all_data.get((team_code, stock_code), {})
         values = [by_timestamp[start + offset][column] for offset in range(50)]
         return (
             [Decimal(value) for value in values]

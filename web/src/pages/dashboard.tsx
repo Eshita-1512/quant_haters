@@ -91,20 +91,36 @@ export default function DashboardPage() {
     session.markIntroSeen(status.current_round === "R3" ? "R3" : "R2");
   };
 
+  useEffect(() => {
+    if (!team) return;
+    try {
+      const stored = localStorage.getItem(`quant_submissions_${team}`);
+      if (stored) setHistory(JSON.parse(stored));
+    } catch {
+      // ignore localStorage errors
+    }
+  }, [team]);
+
   const onSubmitted = (result: UploadSuccess, filename: string) => {
     if (!status) return;
-    setHistory((previous) =>
-      [
-        {
-          id: Date.now(),
-          filename,
-          round: status.current_round,
-          submissionNumber: result.submission_number,
-          at: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
-        },
-        ...previous,
-      ].slice(0, 10),
-    );
+    const newEntry: SubmissionRecord = {
+      id: Date.now(),
+      filename,
+      round: status.current_round,
+      submissionNumber: result.submission_number,
+      at: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+    };
+    setHistory((previous) => {
+      const updated = [newEntry, ...previous].slice(0, 10);
+      if (team) {
+        try {
+          localStorage.setItem(`quant_submissions_${team}`, JSON.stringify(updated));
+        } catch {
+          // ignore
+        }
+      }
+      return updated;
+    });
     setProgress({
       round: status.current_round,
       submitted: result.submission_number,
@@ -113,8 +129,8 @@ export default function DashboardPage() {
   };
 
   const roundProgress = status && progress?.round === status.current_round ? progress : null;
-  const remainingThisRound = roundProgress?.remaining ?? null;
-  const submittedThisRound = roundProgress?.submitted ?? null;
+  const remainingThisRound = roundProgress?.remaining ?? status?.submissions_remaining ?? null;
+  const submittedThisRound = roundProgress?.submitted ?? status?.submissions_count ?? null;
   const roundHistory = status ? history.filter((item) => item.round === status.current_round) : [];
 
   const title =

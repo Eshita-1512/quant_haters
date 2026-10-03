@@ -12,6 +12,7 @@ import type {
   EventStatus,
   FinalBacktestResult,
   FlashCrashRequest,
+  LeaderboardEntry,
   RoundCode,
   SnapshotResult,
   StartRoundRequest,
@@ -149,6 +150,13 @@ const httpApi = {
       timeoutMs: 60000,
     });
   },
+  getLeaderboard: async () => {
+    const entries = await request<Array<Omit<LeaderboardEntry, "score"> & { score: number | string }>>(
+      endpoints.leaderboard,
+      { scope: "none" },
+    );
+    return entries.map((entry) => ({ ...entry, score: Number(entry.score) }));
+  },
 };
 
 const mockApi: typeof httpApi = {
@@ -156,6 +164,7 @@ const mockApi: typeof httpApi = {
   getStatus: () => runMock("team", () => mockBackend.getStatus(session.getToken())),
   getDownload: () => runMock("team", () => mockBackend.getDownload(session.getToken())),
   upload: (file, round) => runMock("team", () => mockBackend.upload(session.getToken(), file, round)),
+  getLeaderboard: () => runMock("none", () => []),
 };
 
 type RawAdminStatus = Omit<AdminStatus, "current_round"> & { current_round: RoundCode | null };

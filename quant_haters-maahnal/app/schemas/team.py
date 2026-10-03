@@ -14,6 +14,7 @@ class TeamProfile(BaseModel):
     train_end: int
     predict_start: int
     predict_end: int
+    download_available: bool
 
 
 class DatasetDownload(BaseModel):
