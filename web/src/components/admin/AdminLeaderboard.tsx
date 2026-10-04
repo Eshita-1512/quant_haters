@@ -202,10 +202,10 @@ export default function AdminLeaderboard({ currentRound }: AdminLeaderboardProps
                   </td>
                   <td
                     className={`tabular px-4 py-2.5 text-right font-mono font-semibold ${
-                      entry.private_score !== null && entry.private_score < 0 ? "text-down" : "text-text"
+                      entry.private_score != null && entry.private_score < 0 ? "text-down" : "text-text"
                     }`}
                   >
-                    {entry.private_score !== null ? formatScore(entry.private_score) : "-"}
+                    {entry.private_score != null ? formatScore(entry.private_score) : "-"}
                   </td>
                 </tr>
               );

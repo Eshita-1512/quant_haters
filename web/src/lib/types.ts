@@ -116,7 +116,7 @@ export interface AdminLeaderboardEntry {
   score: number;
   submissions: number;
   last_submission_at: string | null;
-  private_score: number | null;
+  private_score?: number | null;
 }
 
 export interface SnapshotResult {
