@@ -22,7 +22,8 @@ from app.security import hash_password
 
 import os
 
-WORKSPACE_ROOT = Path(__file__).resolve().parents[3]
+_parents = Path(__file__).resolve().parents
+WORKSPACE_ROOT = _parents[3] if len(_parents) > 3 else Path("/quant")
 default_team_files = WORKSPACE_ROOT / "team_files" if (WORKSPACE_ROOT / "team_files").exists() else Path("/quant/team_files")
 default_generated = WORKSPACE_ROOT / "generated_test" / "round2" if (WORKSPACE_ROOT / "generated_test" / "round2").exists() else Path("/quant/generated_test/round2")
 default_passwords = WORKSPACE_ROOT / "generated_test" / "passwords.csv" if (WORKSPACE_ROOT / "generated_test").exists() else Path("/quant/generated_test/passwords.csv")
