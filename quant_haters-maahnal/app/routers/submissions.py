@@ -49,3 +49,10 @@ async def submit_round(round_num: int, file: UploadFile = File(...), team_id: uu
                 "message": str(exc),
             },
         )
+    except Exception as exc:
+        db.rollback()
+        import traceback
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": str(exc), "traceback": traceback.format_exc()},
+        )
