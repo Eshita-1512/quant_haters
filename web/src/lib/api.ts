@@ -168,7 +168,7 @@ const mockApi: typeof httpApi = {
 };
 
 type RawAdminStatus = Omit<AdminStatus, "current_round"> & { current_round: RoundCode | null };
-type RawLeaderboardEntry = Omit<AdminLeaderboardEntry, "score"> & { score: number | string };
+type RawLeaderboardEntry = Omit<AdminLeaderboardEntry, "score" | "private_score"> & { score: number | string; private_score?: number | string | null };
 
 async function getAdminStatus(): Promise<AdminStatus> {
   return checkAdminStatus(await request<RawAdminStatus>(adminEndpoints.status, { scope: "admin" }));
@@ -203,7 +203,11 @@ const httpAdminApi = {
       `${adminEndpoints.leaderboard}?round=${encodeURIComponent(round)}`,
       { scope: "admin" },
     );
-    return entries.map((entry): AdminLeaderboardEntry => ({ ...entry, score: Number(entry.score) }));
+    return entries.map((entry): AdminLeaderboardEntry => ({
+      ...entry,
+      score: Number(entry.score),
+      private_score: entry.private_score != null ? Number(entry.private_score) : null,
+    }));
   },
   publishSnapshot: () => request<SnapshotResult>(adminEndpoints.snapshot, { method: "POST", scope: "admin" }),
   runFinalBacktest: () =>
