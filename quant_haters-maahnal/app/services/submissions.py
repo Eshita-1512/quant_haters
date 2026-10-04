@@ -138,7 +138,7 @@ async def process_submission(*, file: UploadFile, round_number: int, team_id: uu
     count = db.scalar(select(func.count(Submission.id)).where(Submission.team_id == team_id, Submission.round_id == round_.id)) or 0
     if count >= round_.max_submissions_per_team:
         raise SubmissionValidationError(f"Submission limit ({round_.max_submissions_per_team}) reached for this round.")
-    rows = validate_submission_csv(content, round_number=round_number)
+    rows = sorted(validate_submission_csv(content, round_number=round_number), key=lambda item: item.timestamp)
     submission = Submission(team_id=team_id, round_id=round_.id, stock_id=stock.id, assignment_id=assignment.id, original_filename=file.filename, file_hash=hashlib.sha256(content).hexdigest(), file_size_bytes=len(content), row_count=50, status=SubmissionStatus.SCORING)
     db.add(submission)
     db.flush()
@@ -149,7 +149,7 @@ async def process_submission(*, file: UploadFile, round_number: int, team_id: uu
         signals = [row.signal for row in rows if isinstance(row, SignalInput)]
         result = score_signals(signals, targets)  # type: ignore[arg-type]
         db.add_all([SignalRow(submission_id=submission.id, timestamp_index=row.timestamp, signal=row.signal) for row in rows if isinstance(row, SignalInput)])
-        score = Score(submission_id=submission.id, team_id=team_id, round_id=round_.id, stock_id=stock.id, score=Decimal(str(result.score)), details={"sharpe_ratio": result.sharpe_ratio, "max_drawdown": result.max_drawdown, "transaction_cost_penalty": result.transaction_cost_penalty})
+        score = Score(submission_id=submission.id, team_id=team_id, round_id=round_.id, stock_id=stock.id, score=Decimal(str(result.score)), details={"sharpe_ratio": result.sharpe_ratio, "max_drawdown": result.max_drawdown, "transaction_cost_penalty": result.transaction_cost_penalty, "alpha_score": result.alpha_score})
         balanced_accuracy = mcc = None
     else:
         predictions = [row.prediction for row in rows if isinstance(row, PredictionInput)]
