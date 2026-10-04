@@ -152,21 +152,22 @@ export default function AdminLeaderboard({ currentRound }: AdminLeaderboardProps
               </th>
               <th scope="col" className="px-2 py-3 text-right font-medium">Subs</th>
               <th scope="col" className="hidden px-2 py-3 text-right font-medium sm:table-cell">Last</th>
-              <th scope="col" className="w-28 px-4 py-3 text-right font-medium">Score</th>
+              <th scope="col" className="w-24 px-2 py-3 text-right font-medium">Public</th>
+              <th scope="col" className="w-24 px-4 py-3 text-right font-medium">Private</th>
             </tr>
           </thead>
           <tbody>
             {entries === null &&
               Array.from({ length: 6 }).map((_, index) => (
                 <tr key={index} className="border-b border-line last:border-0">
-                  <td colSpan={7} className="px-4 py-3">
+                  <td colSpan={8} className="px-4 py-3">
                     <div className="h-5 animate-pulse rounded bg-panel-2" />
                   </td>
                 </tr>
               ))}
             {entries !== null && filtered.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-sm text-muted">
+                <td colSpan={8} className="px-4 py-10 text-center text-sm text-muted">
                   {ranked.length === 0 ? `No scored submissions for ${round} yet.` : "No teams match that search."}
                 </td>
               </tr>
@@ -193,11 +194,18 @@ export default function AdminLeaderboard({ currentRound }: AdminLeaderboardProps
                     {timeAgo(entry.last_submission_at)}
                   </td>
                   <td
-                    className={`tabular px-4 py-2.5 text-right font-mono font-semibold ${
+                    className={`tabular px-2 py-2.5 text-right font-mono font-semibold ${
                       entry.score < 0 ? "text-down" : "text-text"
                     }`}
                   >
                     {formatScore(entry.score)}
+                  </td>
+                  <td
+                    className={`tabular px-4 py-2.5 text-right font-mono font-semibold ${
+                      entry.private_score !== null && entry.private_score < 0 ? "text-down" : "text-text"
+                    }`}
+                  >
+                    {entry.private_score !== null ? formatScore(entry.private_score) : "-"}
                   </td>
                 </tr>
               );

@@ -20,9 +20,10 @@ from app.schemas.leaderboard import AdminLeaderboardEntry, LeaderboardEntry, Sna
 
 def _best_scores(round_id: int):
     return (
-        select(Score.team_id, func.max(Score.score).label("best_score"))
+        select(Score.team_id, Score.score.label("best_score"), Score.details.label("details"))
+        .distinct(Score.team_id)
         .where(Score.round_id == round_id, Score.is_valid.is_(True))
-        .group_by(Score.team_id)
+        .order_by(Score.team_id, Score.score.desc())
         .subquery()
     )
 
@@ -79,6 +80,7 @@ def admin_leaderboard(db: Session, round_code: str | None = None) -> list[AdminL
             Team.team_name,
             Team.team_code,
             best_scores.c.best_score,
+            best_scores.c.details,
             func.coalesce(submission_stats.c.submission_count, 0),
             submission_stats.c.last_submission_at,
         )
@@ -95,8 +97,9 @@ def admin_leaderboard(db: Session, round_code: str | None = None) -> list[AdminL
             score=score,
             submissions=submissions,
             last_submission_at=last_submission_at,
+            private_score=Decimal(str(details.get("private_score"))) if details and "private_score" in details else None,
         )
-        for rank, (team_name, team_code, score, submissions, last_submission_at) in enumerate(
+        for rank, (team_name, team_code, score, details, submissions, last_submission_at) in enumerate(
             db.execute(statement).all(), start=1
         )
     ]
