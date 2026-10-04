@@ -46,13 +46,13 @@ def _normalize_stock(stock: str) -> str:
 def load() -> None:
     settings = get_settings()
     with SessionLocal() as db:
+        db.query(EventState).delete()
         db.query(DatasetRelease).delete()
         db.query(TeamAssignment).delete()
         db.query(Team).delete()
         db.query(Stock).delete()
         db.query(Round).delete()
         db.query(AdminUser).delete()
-        db.query(EventState).delete()
         db.commit()
         
         now = datetime.now(UTC)
