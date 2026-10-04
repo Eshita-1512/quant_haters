@@ -31,7 +31,7 @@ default_passwords = WORKSPACE_ROOT / "generated_test" / "passwords.csv" if (WORK
 TEAM_FILES_DIR = Path(os.environ.get("TEAM_FILES_DIR", str(default_team_files)))
 GENERATED_DIR = Path(os.environ.get("GENERATED_DIR", str(default_generated)))
 PASSWORDS_FILE = Path(os.environ.get("PASSWORDS_FILE", str(default_passwords)))
-ADMIN_PASSWORD = "admin-demo-password"
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "admin-demo-password")
 
 def _hash_and_copy(src_path: Path, dest_path: Path) -> tuple[str, int, int]:
     dest_path.parent.mkdir(parents=True, exist_ok=True)
