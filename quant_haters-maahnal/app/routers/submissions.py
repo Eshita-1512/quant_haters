@@ -39,13 +39,13 @@ async def submit_round(round_num: int, file: UploadFile = File(...), team_id: uu
                 "retry_after_seconds": exc.retry_after_seconds,
             },
         )
-    except ValidationDataError:
+    except ValidationDataError as exc:
         db.rollback()
         return JSONResponse(
             status_code=503,
             content={
                 "status": "error",
                 "code": 503,
-                "message": "Scoring validation data is unavailable.",
+                "message": str(exc),
             },
         )

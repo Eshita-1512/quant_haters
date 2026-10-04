@@ -27,7 +27,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-e7b4c91a82f34d109f2b84c8a20d75c94e82b7194ad825e68310c839d042bf92}
       CORS_ORIGINS: '["*"]'
       PRIVATE_DATA_DIR: /app/private_data
-      MASTER_VALIDATION_PATH: /app/private_data/master_validation.csv
+      MASTER_VALIDATION_PATH: /app/scripts/master_validation.csv
       HIDDEN_VALIDATION_PATH: /app/private_data/hidden_validation.csv
     volumes:
       - private_data:/app/private_data
