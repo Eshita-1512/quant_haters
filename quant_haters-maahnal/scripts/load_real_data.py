@@ -158,13 +158,37 @@ def load() -> None:
             shutil.copy2(master_src, settings.master_validation_path)
             shutil.copy2(master_src, settings.hidden_validation_path)
 
-        # write passwords
-        PASSWORDS_FILE.parent.mkdir(parents=True, exist_ok=True)
-        with PASSWORDS_FILE.open("w", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(["team_code", "password"])
-            for code, pw in passwords:
-                writer.writerow([code, pw])
+        # write passwords safely
+        pw_backup = settings.private_data_dir / "passwords.csv"
+        try:
+            pw_backup.parent.mkdir(parents=True, exist_ok=True)
+            with pw_backup.open("w", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["team_code", "password"])
+                for code, pw in passwords:
+                    writer.writerow([code, pw])
+            print(f"[SUCCESS] Team credentials saved to {pw_backup}")
+        except Exception as e:
+            print(f"[WARN] Could not write to {pw_backup}: {e}")
+
+        try:
+            PASSWORDS_FILE.parent.mkdir(parents=True, exist_ok=True)
+            with PASSWORDS_FILE.open("w", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["team_code", "password"])
+                for code, pw in passwords:
+                    writer.writerow([code, pw])
+            print(f"[SUCCESS] Team credentials also written to {PASSWORDS_FILE}")
+        except OSError:
+            pass
+
+        print(f"\n==========================================")
+        print(f"DATABASE INITIALIZATION COMPLETE")
+        print(f"Total Teams:  {len(teams_map)}")
+        print(f"Total Stocks: {len(stocks_map)}")
+        print(f"Admin User:   admin")
+        print(f"Admin Pass:   {ADMIN_PASSWORD}")
+        print(f"==========================================\n")
 
 if __name__ == "__main__":
     load()
