@@ -82,7 +82,7 @@ def _load_all_master_validation(path_str: str, required_tuple: tuple) -> dict:
     return by_key
 
 def _validation_targets(
-    team_code: str, stock_code: str, start: int, round_number: int
+    team_code: str, stock_code: str, start: int, end: int, round_number: int
 ) -> list[int] | list[Decimal]:
     path = get_settings().master_validation_path
     if not path.is_file():
@@ -92,7 +92,8 @@ def _validation_targets(
     try:
         all_data = _load_all_master_validation(str(path), tuple(sorted(required)))
         by_timestamp = all_data.get((team_code, stock_code), {})
-        values = [by_timestamp[start + offset][column] for offset in range(50)]
+        length = end - start + 1
+        values = [by_timestamp[start + offset][column] for offset in range(length)]
         return (
             [Decimal(value) for value in values]
             if round_number == 3
@@ -138,12 +139,12 @@ async def process_submission(*, file: UploadFile, round_number: int, team_id: uu
     count = db.scalar(select(func.count(Submission.id)).where(Submission.team_id == team_id, Submission.round_id == round_.id)) or 0
     if count >= round_.max_submissions_per_team:
         raise SubmissionValidationError(f"Submission limit ({round_.max_submissions_per_team}) reached for this round.")
-    rows = sorted(validate_submission_csv(content, round_number=round_number), key=lambda item: item.timestamp)
+    rows = sorted(validate_submission_csv(content, round_number=round_number, predict_start=assignment.predict_start, predict_end=assignment.predict_end), key=lambda item: item.timestamp)
     submission = Submission(team_id=team_id, round_id=round_.id, stock_id=stock.id, assignment_id=assignment.id, original_filename=file.filename, file_hash=hashlib.sha256(content).hexdigest(), file_size_bytes=len(content), row_count=50, status=SubmissionStatus.SCORING)
     db.add(submission)
     db.flush()
     targets = _validation_targets(
-        team.team_code, stock.stock_code, assignment.predict_start, round_number
+        team.team_code, stock.stock_code, assignment.predict_start, assignment.predict_end, round_number
     )
     if round_number == 3:
         signals = [row.signal for row in rows if isinstance(row, SignalInput)]

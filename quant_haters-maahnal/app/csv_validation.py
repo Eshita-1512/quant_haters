@@ -31,7 +31,7 @@ def _decimal(value: str | None, row_number: int) -> Decimal:
     return number
 
 
-def validate_submission_csv(content: bytes, *, round_number: int) -> list[PredictionInput | SignalInput]:
+def validate_submission_csv(content: bytes, *, round_number: int, predict_start: int, predict_end: int) -> list[PredictionInput | SignalInput]:
     try:
         text = content.decode("utf-8-sig")
     except UnicodeDecodeError:
@@ -50,8 +50,9 @@ def validate_submission_csv(content: bytes, *, round_number: int) -> list[Predic
         raise SubmissionValidationError("Invalid CSV schema")
 
     raw_rows = list(reader)
-    if len(raw_rows) != 50:
-        raise SubmissionValidationError(f"Expected 50 rows, got {len(raw_rows)}.")
+    expected_count = predict_end - predict_start + 1
+    if len(raw_rows) != expected_count:
+        raise SubmissionValidationError(f"Expected {expected_count} rows, got {len(raw_rows)}.")
 
     result: list[PredictionInput | SignalInput] = []
     seen: set[int] = set()
@@ -64,7 +65,7 @@ def validate_submission_csv(content: bytes, *, round_number: int) -> list[Predic
             raise SubmissionValidationError(f"Row {row_number}: non-numeric value found.") from None
         if timestamp in seen:
             raise SubmissionValidationError(f"Duplicate timestamp found at row {row_number}.")
-        if timestamp < 1 or timestamp > 50:
+        if timestamp < predict_start or timestamp > predict_end:
             raise SubmissionValidationError(f"Timestamp {timestamp} is outside your assigned window.")
         seen.add(timestamp)
 
@@ -83,7 +84,8 @@ def validate_submission_csv(content: bytes, *, round_number: int) -> list[Predic
                 raise SubmissionValidationError(f"Row {row_number}: confidence must be between 0.0 and 1.0.")
             result.append(PredictionInput(timestamp, int(prediction_number), confidence))
 
-    if seen != set(range(1, 51)):
-        missing = min(set(range(1, 51)) - seen)
-        raise SubmissionValidationError(f"Timestamp {missing} is outside your assigned window.")
+    expected_set = set(range(predict_start, predict_end + 1))
+    if seen != expected_set:
+        missing = min(expected_set - seen)
+        raise SubmissionValidationError(f"Timestamp {missing} is missing from your submission.")
     return result
