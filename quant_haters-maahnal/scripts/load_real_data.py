@@ -57,7 +57,7 @@ def load() -> None:
         
         now = datetime.now(UTC)
         rounds = [
-            Round(id=1, round_code="R1", round_name="Round 1: Foundation", submission_type="prediction", phase=RoundPhase.LIVE, starts_at=now - timedelta(minutes=5), ends_at=now + timedelta(hours=1)),
+            Round(id=1, round_code="R1", round_name="Round 1: Foundation", submission_type="prediction", phase=RoundPhase.SCHEDULED, starts_at=now + timedelta(hours=1), ends_at=now + timedelta(hours=2)),
             Round(id=2, round_code="R2", round_name="Round 2: Signal Hunt", submission_type="prediction", phase=RoundPhase.SCHEDULED, starts_at=now + timedelta(hours=1), ends_at=now + timedelta(hours=2)),
             Round(id=3, round_code="R3", round_name="Round 3: Alpha", submission_type="signal", phase=RoundPhase.SCHEDULED, starts_at=now + timedelta(hours=2), ends_at=now + timedelta(hours=3)),
         ]
