@@ -12,6 +12,42 @@ const schedule = [
   { code: "R3", name: "Alpha", detail: "Size positions from -1 to +1" },
 ];
 
+export default function LoginPage() {
+  const router = useRouter();
+  const [teamId, setTeamId] = useState("");
+  const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Controls whether the splash screen or login form is visible
+  const [entered, setEntered] = useState(false);
+
+  const { token } = useSession();
+
+  useEffect(() => {
+    if (token) router.replace("/dashboard");
+  }, [token, router]);
+
+  const expired = router.query.expired === "1";
+
+  const onSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    const team = teamId.trim();
+    if (!team || !password) {
+      setError("ENTER CREDENTIALS.");
+      return;
+    }
+    setSubmitting(true);
+    setError(null);
+    try {
+      const { token: issued } = await api.login({ team_id: team, password });
+      session.save(issued, team.toUpperCase());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "ACCESS DENIED.");
+      setSubmitting(false);
+    }
+  };
+
   if (!entered && !expired) {
     return (
       <main 
