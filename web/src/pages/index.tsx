@@ -12,117 +12,70 @@ const schedule = [
   { code: "R3", name: "Alpha", detail: "Size positions from -1 to +1" },
 ];
 
-const QuantCrashAnimation = () => {
-  useEffect(() => {
-    const canvas = document.getElementById("quant-canvas") as HTMLCanvasElement;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    
-    let currentX = 0;
-    const candleWidth = 8;
-    const spacing = 4;
-    let lastClose = canvas.height / 2;
-    
-    const draw = () => {
-      // Create trailing chaos
-      ctx.fillStyle = Math.random() > 0.8 ? "rgba(0, 0, 0, 0.15)" : "rgba(0, 0, 0, 0.01)"; 
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      // Extreme speed: 5 to 12 candles per frame
-      const candlesToDraw = 5 + Math.floor(Math.random() * 7);
-      
-      for (let i = 0; i < candlesToDraw; i++) {
-        // 15% chance of a violent flash crash
-        const isCrash = Math.random() > 0.85; 
-        
-        const volatility = isCrash ? 800 : (Math.random() * 100);
-        
-        let open = lastClose;
-        // Strongly biased downwards (-0.7 instead of -0.5)
-        let close = open + (Math.random() - (isCrash ? 0.9 : 0.6)) * volatility;
-        
-        // If it crashes off the bottom, wrap to the top immediately (infinite falling)
-        if (close > canvas.height + 100) close = -100;
-        if (close < -100) close = canvas.height + 100;
-        
-        let high = Math.min(open, close) - Math.random() * 200;
-        let low = Math.max(open, close) + Math.random() * 200;
-        
-        const isRed = close > open; 
-        
-        // Aggressive glitches
-        const glitchX = Math.random() > 0.90 ? (Math.random() - 0.5) * 400 : 0;
-        const glitchY = Math.random() > 0.90 ? (Math.random() - 0.5) * 400 : 0;
-        
-        const drawX = currentX + glitchX;
-        
-        // Harsh color palette: Deep crimson, bright red, or piercing white
-        ctx.strokeStyle = isRed ? (Math.random() > 0.7 ? "#ff0000" : "#7f1d1d") : "#ffffff";
-        ctx.lineWidth = Math.random() * 6; // randomly thick lines
-        ctx.beginPath();
-        ctx.moveTo(drawX + candleWidth/2, high + glitchY);
-        ctx.lineTo(drawX + candleWidth/2, low + glitchY);
-        ctx.stroke();
-        
-        ctx.fillStyle = ctx.strokeStyle;
-        const bodyHeight = Math.abs(close - open) || 1;
-        ctx.fillRect(drawX, Math.min(open, close) + glitchY, candleWidth, bodyHeight);
-        
-        // Subliminal massive red text (Losses / Margin Calls) flashing for 1 frame
-        if (Math.random() > 0.96) {
-          ctx.fillStyle = Math.random() > 0.5 ? "rgba(220, 38, 38, 0.9)" : "rgba(255, 255, 255, 0.8)";
-          ctx.font = `900 ${40 + Math.random() * 150}px monospace`;
-          
-          const texts = [
-            `-$${(Math.random() * 99999999).toFixed(2)}`,
-            "LIQUIDATED",
-            "MARGIN CALL",
-            "RISK LIMIT EXCEEDED",
-            "SYSTEM FAILURE"
-          ];
-          const text = texts[Math.floor(Math.random() * texts.length)];
-          
-          // Random slight rotation for maximum chaos
-          ctx.save();
-          ctx.translate(Math.random() * canvas.width, Math.random() * canvas.height);
-          ctx.rotate((Math.random() - 0.5) * 0.5);
-          ctx.fillText(text, 0, 0);
-          ctx.restore();
-        }
-        
-        lastClose = close;
-        currentX += candleWidth + spacing;
-        
-        if (currentX > canvas.width) {
-          currentX = 0;
-          if (Math.random() > 0.1) {
-            ctx.fillStyle = "black";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+  if (!entered && !expired) {
+    return (
+      <main 
+        onClick={() => setEntered(true)}
+        className="relative flex min-h-screen cursor-crosshair flex-col items-center justify-center overflow-hidden bg-black animate-[shake_0.15s_infinite]"
+      >
+        <Head>
+          <title>QUANT HATERS</title>
+        </Head>
+
+        <style>{`
+          @keyframes glitch-eye {
+            0% { clip-path: inset(20% 0 80% 0); transform: translate(-2px, 2px); filter: hue-rotate(0deg) contrast(1.5); }
+            5% { clip-path: inset(10% 0 40% 0); transform: translate(2px, -2px); filter: hue-rotate(45deg) contrast(2); }
+            10% { clip-path: inset(80% 0 5% 0); transform: translate(-2px, 2px); filter: hue-rotate(-45deg) contrast(1.5); }
+            15% { clip-path: inset(0% 0 100% 0); transform: translate(0); filter: hue-rotate(0deg) contrast(1); }
+            100% { clip-path: inset(0% 0 100% 0); transform: translate(0); filter: hue-rotate(0deg) contrast(1); }
           }
-        }
-      }
-    };
-    
-    // 60 frames per second
-    const interval = setInterval(draw, 16); 
-    
-    const handleResize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    window.addEventListener('resize', handleResize);
-    
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
-  
-  return <canvas id="quant-canvas" className="absolute inset-0 z-0 opacity-100" />;
-};
+          @keyframes breathe {
+            0%, 100% { transform: scale(1); filter: brightness(0.8) contrast(1.2); }
+            50% { transform: scale(1.05); filter: brightness(1.2) contrast(1.5); }
+          }
+          @keyframes shake {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(3px, 3px) rotate(0.5deg); }
+            50% { transform: translate(-3px, -3px) rotate(-0.5deg); }
+            75% { transform: translate(-3px, 3px) rotate(0.5deg); }
+          }
+          @keyframes flash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+            25%, 75% { opacity: 0; }
+          }
+          .strobe {
+            animation: flash 0.05s infinite;
+          }
+        `}</style>
+
+        {/* The Burning Dollar */}
+        <div className="relative w-full max-w-2xl aspect-square animate-[breathe_3s_ease-in-out_infinite]">
+          {/* Base Dollar */}
+          <img 
+            src="/burning_money.jpg" 
+            alt="Burning Wealth" 
+            className="absolute inset-0 w-full h-full object-cover mix-blend-screen opacity-90 rounded-full [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)]"
+          />
+          
+          {/* Glitching Overlay */}
+          <img 
+            src="/burning_money.jpg" 
+            alt="" 
+            className="absolute inset-0 w-full h-full object-cover mix-blend-screen opacity-60 rounded-full [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)] animate-[glitch-eye_2s_infinite_linear_alternate-reverse]"
+          />
+        </div>
+
+        {/* Deep red glowing orb to enhance the heat/fire feeling */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[40rem] w-[40rem] bg-orange-700/20 blur-[80px] rounded-full pointer-events-none z-10 animate-pulse mix-blend-screen" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[20rem] w-[20rem] bg-red-600/30 blur-[40px] rounded-full pointer-events-none z-10 animate-[ping_3s_infinite] mix-blend-screen" />
+
+        {/* Insane strobe overlay that is subtle but unsettling */}
+        <div className="strobe absolute inset-0 bg-red-900/5 mix-blend-overlay pointer-events-none z-50" />
+      </main>
+    );
+  }
 
 export default function LoginPage() {
   const router = useRouter();
