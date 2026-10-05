@@ -22,64 +22,75 @@ const QuantCrashAnimation = () => {
     canvas.height = window.innerHeight;
     
     let currentX = 0;
-    const candleWidth = 14;
-    const spacing = 6;
+    const candleWidth = 8;
+    const spacing = 4;
     let lastClose = canvas.height / 2;
     
     const draw = () => {
-      // Fade out previous frames slowly for a motion blur/chaos effect
-      ctx.fillStyle = "rgba(0, 0, 0, 0.05)"; 
+      // Create trailing chaos
+      ctx.fillStyle = Math.random() > 0.8 ? "rgba(0, 0, 0, 0.15)" : "rgba(0, 0, 0, 0.01)"; 
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       
-      // Fast algorithm mode: Generate 3-5 candles per frame for extreme speed
-      for (let i = 0; i < 3; i++) {
-        // 5% chance of a massive flash crash red candle
-        const isCrash = Math.random() > 0.95; 
-        // 2% chance of a massive short squeeze green candle
-        const isSqueeze = Math.random() > 0.98;
+      // Extreme speed: 5 to 12 candles per frame
+      const candlesToDraw = 5 + Math.floor(Math.random() * 7);
+      
+      for (let i = 0; i < candlesToDraw; i++) {
+        // 15% chance of a violent flash crash
+        const isCrash = Math.random() > 0.85; 
         
-        const volatility = isCrash ? 300 : (isSqueeze ? -250 : (Math.random() * 40));
+        const volatility = isCrash ? 800 : (Math.random() * 100);
         
         let open = lastClose;
-        let close = open + (Math.random() - 0.5) * 10 + (isCrash ? Math.random() * volatility : 0) + (isSqueeze ? Math.random() * volatility : 0);
+        // Strongly biased downwards (-0.7 instead of -0.5)
+        let close = open + (Math.random() - (isCrash ? 0.9 : 0.6)) * volatility;
         
-        // Keep price mostly on screen, but allow it to wildly swing
-        if (close > canvas.height * 0.9) {
-          close = canvas.height * 0.9 - Math.random() * 100;
-        }
-        if (close < canvas.height * 0.1) {
-          close = canvas.height * 0.1 + Math.random() * 100;
-        }
+        // If it crashes off the bottom, wrap to the top immediately (infinite falling)
+        if (close > canvas.height + 100) close = -100;
+        if (close < -100) close = canvas.height + 100;
         
-        let high = Math.min(open, close) - Math.random() * 50;
-        let low = Math.max(open, close) + Math.random() * 50;
+        let high = Math.min(open, close) - Math.random() * 200;
+        let low = Math.max(open, close) + Math.random() * 200;
         
-        // y-axis goes down, so close > open = price dropped = red
         const isRed = close > open; 
         
-        // Random glitch displacements
-        const glitchX = Math.random() > 0.95 ? (Math.random() - 0.5) * 100 : 0;
-        const glitchY = Math.random() > 0.95 ? (Math.random() - 0.5) * 100 : 0;
+        // Aggressive glitches
+        const glitchX = Math.random() > 0.90 ? (Math.random() - 0.5) * 400 : 0;
+        const glitchY = Math.random() > 0.90 ? (Math.random() - 0.5) * 400 : 0;
         
         const drawX = currentX + glitchX;
         
-        // Draw wick
-        ctx.strokeStyle = isRed ? "#dc2626" : "#22c55e"; // Red or Green
-        ctx.lineWidth = 2;
+        // Harsh color palette: Deep crimson, bright red, or piercing white
+        ctx.strokeStyle = isRed ? (Math.random() > 0.7 ? "#ff0000" : "#7f1d1d") : "#ffffff";
+        ctx.lineWidth = Math.random() * 6; // randomly thick lines
         ctx.beginPath();
         ctx.moveTo(drawX + candleWidth/2, high + glitchY);
         ctx.lineTo(drawX + candleWidth/2, low + glitchY);
         ctx.stroke();
         
-        // Draw body
-        ctx.fillStyle = isRed ? "#dc2626" : "#22c55e";
+        ctx.fillStyle = ctx.strokeStyle;
         const bodyHeight = Math.abs(close - open) || 1;
         ctx.fillRect(drawX, Math.min(open, close) + glitchY, candleWidth, bodyHeight);
         
-        // Add scary horizontal red/green laser bands
-        if (Math.random() > 0.92) {
-          ctx.fillStyle = isRed ? "rgba(220, 38, 38, 0.05)" : "rgba(34, 197, 94, 0.02)";
-          ctx.fillRect(0, Math.min(open, close) + glitchY, canvas.width, bodyHeight);
+        // Subliminal massive red text (Losses / Margin Calls) flashing for 1 frame
+        if (Math.random() > 0.96) {
+          ctx.fillStyle = Math.random() > 0.5 ? "rgba(220, 38, 38, 0.9)" : "rgba(255, 255, 255, 0.8)";
+          ctx.font = `900 ${40 + Math.random() * 150}px monospace`;
+          
+          const texts = [
+            `-$${(Math.random() * 99999999).toFixed(2)}`,
+            "LIQUIDATED",
+            "MARGIN CALL",
+            "RISK LIMIT EXCEEDED",
+            "SYSTEM FAILURE"
+          ];
+          const text = texts[Math.floor(Math.random() * texts.length)];
+          
+          // Random slight rotation for maximum chaos
+          ctx.save();
+          ctx.translate(Math.random() * canvas.width, Math.random() * canvas.height);
+          ctx.rotate((Math.random() - 0.5) * 0.5);
+          ctx.fillText(text, 0, 0);
+          ctx.restore();
         }
         
         lastClose = close;
@@ -87,18 +98,16 @@ const QuantCrashAnimation = () => {
         
         if (currentX > canvas.width) {
           currentX = 0;
-          // Occasionally wipe the screen black when wrapping around
-          if (Math.random() > 0.3) {
-            ctx.fillStyle = "rgba(0, 0, 0, 0.9)";
+          if (Math.random() > 0.1) {
+            ctx.fillStyle = "black";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            // Reset price to middle
-            lastClose = canvas.height / 2;
           }
         }
       }
     };
     
-    const interval = setInterval(draw, 30); // 33fps
+    // 60 frames per second
+    const interval = setInterval(draw, 16); 
     
     const handleResize = () => {
       canvas.width = window.innerWidth;
@@ -112,7 +121,7 @@ const QuantCrashAnimation = () => {
     };
   }, []);
   
-  return <canvas id="quant-canvas" className="absolute inset-0 z-0 opacity-90" />;
+  return <canvas id="quant-canvas" className="absolute inset-0 z-0 opacity-100" />;
 };
 
 export default function LoginPage() {
@@ -153,7 +162,7 @@ export default function LoginPage() {
     return (
       <main 
         onClick={() => setEntered(true)}
-        className="relative flex min-h-screen cursor-crosshair flex-col items-center justify-center overflow-hidden bg-black"
+        className="relative flex min-h-screen cursor-crosshair flex-col items-center justify-center overflow-hidden bg-black animate-[shake_0.15s_infinite]"
       >
         <Head>
           <title>QUANT HATERS</title>
@@ -163,13 +172,19 @@ export default function LoginPage() {
         <QuantCrashAnimation />
 
         <style>{`
+          @keyframes shake {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(3px, 3px) rotate(0.5deg); }
+            50% { transform: translate(-3px, -3px) rotate(-0.5deg); }
+            75% { transform: translate(-3px, 3px) rotate(0.5deg); }
+          }
           @keyframes flash {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.8; }
             25%, 75% { opacity: 0; }
           }
           .strobe {
-            animation: flash 0.1s infinite;
+            animation: flash 0.05s infinite;
           }
         `}</style>
 
