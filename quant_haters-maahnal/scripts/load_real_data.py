@@ -10,13 +10,24 @@ from app.config import get_settings
 from app.database import SessionLocal
 from app.models import (
     AdminUser,
+    AdminAuthSession,
+    AuthSession,
     DatasetRelease,
+    DownloadEvent,
     EventState,
+    LeaderboardSnapshot,
+    LeaderboardSnapshotEntry,
+    PredictionRow,
     Round,
     RoundPhase,
+    Score,
+    SignalRow,
     Stock,
+    Submission,
+    SubmissionRateLimit,
     Team,
     TeamAssignment,
+    AdminAuditLog,
 )
 from app.security import hash_password
 
@@ -47,6 +58,17 @@ def load() -> None:
     settings = get_settings()
     with SessionLocal() as db:
         db.query(EventState).delete()
+        db.query(LeaderboardSnapshotEntry).delete()
+        db.query(LeaderboardSnapshot).delete()
+        db.query(AdminAuditLog).delete()
+        db.query(AdminAuthSession).delete()
+        db.query(AuthSession).delete()
+        db.query(PredictionRow).delete()
+        db.query(SignalRow).delete()
+        db.query(Score).delete()
+        db.query(SubmissionRateLimit).delete()
+        db.query(Submission).delete()
+        db.query(DownloadEvent).delete()
         db.query(DatasetRelease).delete()
         db.query(TeamAssignment).delete()
         db.query(Team).delete()
