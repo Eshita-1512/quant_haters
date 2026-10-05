@@ -12,6 +12,60 @@ const schedule = [
   { code: "R3", name: "Alpha", detail: "Size positions from -1 to +1" },
 ];
 
+const MatrixRain = () => {
+  useEffect(() => {
+    const canvas = document.getElementById("matrix-canvas") as HTMLCanvasElement;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    
+    // Scary characters including cyrillic, numbers, and symbols
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$+-*/=%\"'#&_(),.;:?!\\|{}<>[]^~ЯШЖФЦЧΣΩΔ";
+    const fontSize = 18;
+    const columns = canvas.width / fontSize;
+    const drops: number[] = [];
+    for (let x = 0; x < columns; x++) drops[x] = Math.random() * -100; // Random start heights
+    
+    const draw = () => {
+      ctx.fillStyle = "rgba(5, 5, 5, 0.1)"; // Dark fade effect for trails
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      ctx.font = `bold ${fontSize}px monospace`;
+      
+      for (let i = 0; i < drops.length; i++) {
+        const text = chars.charAt(Math.floor(Math.random() * chars.length));
+        
+        // Randomly make some characters bright red/white, mostly deep red
+        ctx.fillStyle = Math.random() > 0.95 ? "#ffffff" : "#dc2626"; 
+        
+        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+        
+        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+        drops[i]++;
+      }
+    };
+    
+    const interval = setInterval(draw, 33);
+    
+    const handleResize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+  
+  return <canvas id="matrix-canvas" className="absolute inset-0 z-0 opacity-60" />;
+};
+
 export default function LoginPage() {
   const router = useRouter();
   const [teamId, setTeamId] = useState("");
@@ -50,46 +104,39 @@ export default function LoginPage() {
 
   if (!entered && !expired) {
     return (
-      <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#050505] text-white selection:bg-red-900/50">
+      <main 
+        onClick={() => setEntered(true)}
+        className="relative flex min-h-screen cursor-crosshair flex-col items-center justify-center overflow-hidden bg-[#000000]"
+      >
         <Head>
           <title>QUANT HATERS</title>
         </Head>
-        
-        {/* Intimidating Background Grid */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#333_1px,transparent_1px),linear-gradient(to_bottom,#333_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)] opacity-20" />
-        
-        {/* Deep red glowing orb */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[40rem] w-[40rem] bg-red-700/10 blur-[150px] rounded-full pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col items-center text-center animate-in fade-in duration-1000 slide-in-from-bottom-8">
-          <p className="font-mono text-sm tracking-[0.5em] text-red-600 mb-6 uppercase animate-pulse">
-            System Online
-          </p>
-          
-          <h1 className="text-6xl sm:text-[8rem] font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white via-neutral-200 to-neutral-700 mb-6 drop-shadow-2xl leading-none">
-            QUANT
-            <br />
-            HATERS
-          </h1>
-          
-          <p className="max-w-3xl text-base sm:text-xl text-neutral-400 font-mono mb-16 px-6 leading-relaxed">
-            <span className="block mb-2 text-white">THE MARKET DOES NOT CARE ABOUT YOUR FEELINGS.</span>
-            <span className="block text-red-500/80">Five hours. One synthetic market.</span>
-            <span className="block">Build the model. Survive the crash. Destroy the leaderboard.</span>
-          </p>
-          
-          <button 
-            onClick={() => setEntered(true)}
-            className="group relative inline-flex items-center justify-center font-mono text-sm font-bold uppercase tracking-[0.2em] px-10 py-5 transition-all duration-300 hover:scale-105"
-          >
-            <div className="absolute inset-0 border border-red-500/40 bg-red-950/30 group-hover:border-red-500 group-hover:bg-red-900/40 transition-all duration-300" />
-            <div className="absolute -inset-2 bg-red-600/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <span className="relative text-red-500 group-hover:text-red-400 flex items-center gap-3">
-              <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-              ENTER THE ARENA
-            </span>
-          </button>
-        </div>
+        {/* Crazier Matrix Rain */}
+        <MatrixRain />
+        
+        {/* Massive Pulsating Red Orb */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[100vw] w-[100vw] sm:h-[60rem] sm:w-[60rem] bg-red-700/30 blur-[120px] rounded-full pointer-events-none z-0 animate-pulse mix-blend-screen" />
+        
+        {/* Intense Core */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[20rem] w-[20rem] bg-red-500/40 blur-[50px] rounded-full pointer-events-none z-0 animate-ping" />
+        
+        {/* Deep Black Hole Center */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[10rem] w-[10rem] bg-black blur-[10px] rounded-full pointer-events-none z-10" />
+
+        <style>{`
+          @keyframes flash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+            25%, 75% { opacity: 0; }
+          }
+          .strobe {
+            animation: flash 0.1s infinite;
+          }
+        `}</style>
+        
+        {/* Insane strobe overlay that is subtle but unsettling */}
+        <div className="strobe absolute inset-0 bg-red-900/5 mix-blend-overlay pointer-events-none z-50" />
       </main>
     );
   }
