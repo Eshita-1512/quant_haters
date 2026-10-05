@@ -19,9 +19,7 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Controls whether the splash screen or login form is visible
   const [entered, setEntered] = useState(false);
-
   const { token } = useSession();
 
   useEffect(() => {
@@ -113,78 +111,7 @@ export default function LoginPage() {
     );
   }
 
-export default function LoginPage() {
-  const router = useRouter();
-  const [teamId, setTeamId] = useState("");
-  const [password, setPassword] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  
-  const [entered, setEntered] = useState(false);
-  const { token } = useSession();
 
-  useEffect(() => {
-    if (token) router.replace("/dashboard");
-  }, [token, router]);
-
-  const expired = router.query.expired === "1";
-
-  const onSubmit = async (event: FormEvent) => {
-    event.preventDefault();
-    const team = teamId.trim();
-    if (!team || !password) {
-      setError("ENTER CREDENTIALS.");
-      return;
-    }
-    setSubmitting(true);
-    setError(null);
-    try {
-      const { token: issued } = await api.login({ team_id: team, password });
-      session.save(issued, team.toUpperCase());
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "ACCESS DENIED.");
-      setSubmitting(false);
-    }
-  };
-
-  if (!entered && !expired) {
-    return (
-      <main 
-        onClick={() => setEntered(true)}
-        className="relative flex min-h-screen cursor-crosshair flex-col items-center justify-center overflow-hidden bg-black animate-[shake_0.15s_infinite]"
-      >
-        <Head>
-          <title>QUANT HATERS</title>
-        </Head>
-
-        {/* Terrifying high-speed candlestick chart animation */}
-        <QuantCrashAnimation />
-
-        <style>{`
-          @keyframes shake {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); }
-            25% { transform: translate(3px, 3px) rotate(0.5deg); }
-            50% { transform: translate(-3px, -3px) rotate(-0.5deg); }
-            75% { transform: translate(-3px, 3px) rotate(0.5deg); }
-          }
-          @keyframes flash {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.8; }
-            25%, 75% { opacity: 0; }
-          }
-          .strobe {
-            animation: flash 0.05s infinite;
-          }
-        `}</style>
-
-        {/* Deep red glowing orb to enhance the center focus */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[40rem] w-[40rem] bg-red-900/10 blur-[80px] rounded-full pointer-events-none z-10 animate-pulse mix-blend-screen" />
-
-        {/* Insane strobe overlay that is subtle but unsettling */}
-        <div className="strobe absolute inset-0 bg-red-900/5 mix-blend-overlay pointer-events-none z-50" />
-      </main>
-    );
-  }
 
   return (
     <>
