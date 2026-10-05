@@ -12,6 +12,109 @@ const schedule = [
   { code: "R3", name: "Alpha", detail: "Size positions from -1 to +1" },
 ];
 
+const QuantCrashAnimation = () => {
+  useEffect(() => {
+    const canvas = document.getElementById("quant-canvas") as HTMLCanvasElement;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    
+    let currentX = 0;
+    const candleWidth = 14;
+    const spacing = 6;
+    let lastClose = canvas.height / 2;
+    
+    const draw = () => {
+      // Fade out previous frames slowly for a motion blur/chaos effect
+      ctx.fillStyle = "rgba(0, 0, 0, 0.05)"; 
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Fast algorithm mode: Generate 3-5 candles per frame for extreme speed
+      for (let i = 0; i < 3; i++) {
+        // 5% chance of a massive flash crash red candle
+        const isCrash = Math.random() > 0.95; 
+        // 2% chance of a massive short squeeze green candle
+        const isSqueeze = Math.random() > 0.98;
+        
+        const volatility = isCrash ? 300 : (isSqueeze ? -250 : (Math.random() * 40));
+        
+        let open = lastClose;
+        let close = open + (Math.random() - 0.5) * 10 + (isCrash ? Math.random() * volatility : 0) + (isSqueeze ? Math.random() * volatility : 0);
+        
+        // Keep price mostly on screen, but allow it to wildly swing
+        if (close > canvas.height * 0.9) {
+          close = canvas.height * 0.9 - Math.random() * 100;
+        }
+        if (close < canvas.height * 0.1) {
+          close = canvas.height * 0.1 + Math.random() * 100;
+        }
+        
+        let high = Math.min(open, close) - Math.random() * 50;
+        let low = Math.max(open, close) + Math.random() * 50;
+        
+        // y-axis goes down, so close > open = price dropped = red
+        const isRed = close > open; 
+        
+        // Random glitch displacements
+        const glitchX = Math.random() > 0.95 ? (Math.random() - 0.5) * 100 : 0;
+        const glitchY = Math.random() > 0.95 ? (Math.random() - 0.5) * 100 : 0;
+        
+        const drawX = currentX + glitchX;
+        
+        // Draw wick
+        ctx.strokeStyle = isRed ? "#dc2626" : "#22c55e"; // Red or Green
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(drawX + candleWidth/2, high + glitchY);
+        ctx.lineTo(drawX + candleWidth/2, low + glitchY);
+        ctx.stroke();
+        
+        // Draw body
+        ctx.fillStyle = isRed ? "#dc2626" : "#22c55e";
+        const bodyHeight = Math.abs(close - open) || 1;
+        ctx.fillRect(drawX, Math.min(open, close) + glitchY, candleWidth, bodyHeight);
+        
+        // Add scary horizontal red/green laser bands
+        if (Math.random() > 0.92) {
+          ctx.fillStyle = isRed ? "rgba(220, 38, 38, 0.05)" : "rgba(34, 197, 94, 0.02)";
+          ctx.fillRect(0, Math.min(open, close) + glitchY, canvas.width, bodyHeight);
+        }
+        
+        lastClose = close;
+        currentX += candleWidth + spacing;
+        
+        if (currentX > canvas.width) {
+          currentX = 0;
+          // Occasionally wipe the screen black when wrapping around
+          if (Math.random() > 0.3) {
+            ctx.fillStyle = "rgba(0, 0, 0, 0.9)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Reset price to middle
+            lastClose = canvas.height / 2;
+          }
+        }
+      }
+    };
+    
+    const interval = setInterval(draw, 30); // 33fps
+    
+    const handleResize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+  
+  return <canvas id="quant-canvas" className="absolute inset-0 z-0 opacity-90" />;
+};
+
 export default function LoginPage() {
   const router = useRouter();
   const [teamId, setTeamId] = useState("");
@@ -19,9 +122,7 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Controls whether the splash screen or login form is visible
   const [entered, setEntered] = useState(false);
-
   const { token } = useSession();
 
   useEffect(() => {
@@ -58,18 +159,10 @@ export default function LoginPage() {
           <title>QUANT HATERS</title>
         </Head>
 
+        {/* Terrifying high-speed candlestick chart animation */}
+        <QuantCrashAnimation />
+
         <style>{`
-          @keyframes glitch-eye {
-            0% { clip-path: inset(20% 0 80% 0); transform: translate(-2px, 2px); filter: hue-rotate(0deg) contrast(1.5); }
-            5% { clip-path: inset(10% 0 40% 0); transform: translate(2px, -2px); filter: hue-rotate(45deg) contrast(2); }
-            10% { clip-path: inset(80% 0 5% 0); transform: translate(-2px, 2px); filter: hue-rotate(-45deg) contrast(1.5); }
-            15% { clip-path: inset(0% 0 100% 0); transform: translate(0); filter: hue-rotate(0deg) contrast(1); }
-            100% { clip-path: inset(0% 0 100% 0); transform: translate(0); filter: hue-rotate(0deg) contrast(1); }
-          }
-          @keyframes breathe {
-            0%, 100% { transform: scale(1); filter: brightness(0.8) contrast(1.2); }
-            50% { transform: scale(1.03); filter: brightness(1.2) contrast(1.4); }
-          }
           @keyframes flash {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.8; }
@@ -80,25 +173,8 @@ export default function LoginPage() {
           }
         `}</style>
 
-        {/* The Giant Eye */}
-        <div className="relative w-full max-w-4xl aspect-square animate-[breathe_4s_ease-in-out_infinite]">
-          {/* Base Eye */}
-          <img 
-            src="/intimidating_eye.jpg" 
-            alt="The Algorithm" 
-            className="absolute inset-0 w-full h-full object-cover mix-blend-screen opacity-90 rounded-full [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_50%,transparent_100%)]"
-          />
-          
-          {/* Glitching Overlay Eye */}
-          <img 
-            src="/intimidating_eye.jpg" 
-            alt="" 
-            className="absolute inset-0 w-full h-full object-cover mix-blend-screen opacity-60 rounded-full [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_50%,transparent_100%)] animate-[glitch-eye_3s_infinite_linear_alternate-reverse]"
-          />
-        </div>
-
-        {/* Deep red glowing orb to enhance the center of the eye */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[10rem] w-[10rem] bg-red-600/40 blur-[40px] rounded-full pointer-events-none z-10 animate-pulse mix-blend-screen" />
+        {/* Deep red glowing orb to enhance the center focus */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[40rem] w-[40rem] bg-red-900/10 blur-[80px] rounded-full pointer-events-none z-10 animate-pulse mix-blend-screen" />
 
         {/* Insane strobe overlay that is subtle but unsettling */}
         <div className="strobe absolute inset-0 bg-red-900/5 mix-blend-overlay pointer-events-none z-50" />
