@@ -50,7 +50,7 @@ export default function LoginPage() {
     return (
       <main 
         onClick={() => setEntered(true)}
-        className="relative flex min-h-screen cursor-crosshair flex-col items-center justify-center overflow-hidden bg-black animate-[shake_0.15s_infinite]"
+        className="relative flex min-h-screen cursor-crosshair flex-col items-center justify-center overflow-hidden bg-black animate-[shake_0.3s_infinite]"
       >
         <Head>
           <title>QUANT HATERS</title>
@@ -70,9 +70,9 @@ export default function LoginPage() {
           }
           @keyframes shake {
             0%, 100% { transform: translate(0, 0) rotate(0deg); }
-            25% { transform: translate(3px, 3px) rotate(0.5deg); }
-            50% { transform: translate(-3px, -3px) rotate(-0.5deg); }
-            75% { transform: translate(-3px, 3px) rotate(0.5deg); }
+            25% { transform: translate(1px, 1px) rotate(0.2deg); }
+            50% { transform: translate(-1px, -1px) rotate(-0.2deg); }
+            75% { transform: translate(-1px, 1px) rotate(0.2deg); }
           }
           @keyframes flash {
             0%, 100% { opacity: 1; }
@@ -80,7 +80,7 @@ export default function LoginPage() {
             25%, 75% { opacity: 0; }
           }
           .strobe {
-            animation: flash 0.05s infinite;
+            animation: flash 0.08s infinite;
           }
         `}</style>
 
