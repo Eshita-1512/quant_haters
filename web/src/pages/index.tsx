@@ -12,119 +12,28 @@ const schedule = [
   { code: "R3", name: "Alpha", detail: "Size positions from -1 to +1" },
 ];
 
-const MatrixRain = () => {
-  useEffect(() => {
-    const canvas = document.getElementById("matrix-canvas") as HTMLCanvasElement;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    
-    // Scary characters including cyrillic, numbers, and symbols
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$+-*/=%\"'#&_(),.;:?!\\|{}<>[]^~ЯШЖФЦЧΣΩΔ";
-    const fontSize = 18;
-    const columns = canvas.width / fontSize;
-    const drops: number[] = [];
-    for (let x = 0; x < columns; x++) drops[x] = Math.random() * -100; // Random start heights
-    
-    const draw = () => {
-      ctx.fillStyle = "rgba(5, 5, 5, 0.1)"; // Dark fade effect for trails
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      ctx.font = `bold ${fontSize}px monospace`;
-      
-      for (let i = 0; i < drops.length; i++) {
-        const text = chars.charAt(Math.floor(Math.random() * chars.length));
-        
-        // Randomly make some characters bright red/white, mostly deep red
-        ctx.fillStyle = Math.random() > 0.95 ? "#ffffff" : "#dc2626"; 
-        
-        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-        
-        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
-          drops[i] = 0;
-        }
-        drops[i]++;
-      }
-    };
-    
-    const interval = setInterval(draw, 33);
-    
-    const handleResize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    window.addEventListener('resize', handleResize);
-    
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
-  
-  return <canvas id="matrix-canvas" className="absolute inset-0 z-0 opacity-60" />;
-};
-
-export default function LoginPage() {
-  const router = useRouter();
-  const [teamId, setTeamId] = useState("");
-  const [password, setPassword] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  
-  // Controls whether the splash screen or login form is visible
-  const [entered, setEntered] = useState(false);
-
-  const { token } = useSession();
-
-  useEffect(() => {
-    if (token) router.replace("/dashboard");
-  }, [token, router]);
-
-  const expired = router.query.expired === "1";
-
-  const onSubmit = async (event: FormEvent) => {
-    event.preventDefault();
-    const team = teamId.trim();
-    if (!team || !password) {
-      setError("ENTER CREDENTIALS.");
-      return;
-    }
-    setSubmitting(true);
-    setError(null);
-    try {
-      const { token: issued } = await api.login({ team_id: team, password });
-      session.save(issued, team.toUpperCase());
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "ACCESS DENIED.");
-      setSubmitting(false);
-    }
-  };
-
   if (!entered && !expired) {
     return (
       <main 
         onClick={() => setEntered(true)}
-        className="relative flex min-h-screen cursor-crosshair flex-col items-center justify-center overflow-hidden bg-[#000000]"
+        className="relative flex min-h-screen cursor-crosshair flex-col items-center justify-center overflow-hidden bg-black"
       >
         <Head>
           <title>QUANT HATERS</title>
         </Head>
 
-        {/* Crazier Matrix Rain */}
-        <MatrixRain />
-        
-        {/* Massive Pulsating Red Orb */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[100vw] w-[100vw] sm:h-[60rem] sm:w-[60rem] bg-red-700/30 blur-[120px] rounded-full pointer-events-none z-0 animate-pulse mix-blend-screen" />
-        
-        {/* Intense Core */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[20rem] w-[20rem] bg-red-500/40 blur-[50px] rounded-full pointer-events-none z-0 animate-ping" />
-        
-        {/* Deep Black Hole Center */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[10rem] w-[10rem] bg-black blur-[10px] rounded-full pointer-events-none z-10" />
-
         <style>{`
+          @keyframes glitch-eye {
+            0% { clip-path: inset(20% 0 80% 0); transform: translate(-2px, 2px); filter: hue-rotate(0deg) contrast(1.5); }
+            5% { clip-path: inset(10% 0 40% 0); transform: translate(2px, -2px); filter: hue-rotate(45deg) contrast(2); }
+            10% { clip-path: inset(80% 0 5% 0); transform: translate(-2px, 2px); filter: hue-rotate(-45deg) contrast(1.5); }
+            15% { clip-path: inset(0% 0 100% 0); transform: translate(0); filter: hue-rotate(0deg) contrast(1); }
+            100% { clip-path: inset(0% 0 100% 0); transform: translate(0); filter: hue-rotate(0deg) contrast(1); }
+          }
+          @keyframes breathe {
+            0%, 100% { transform: scale(1); filter: brightness(0.8) contrast(1.2); }
+            50% { transform: scale(1.03); filter: brightness(1.2) contrast(1.4); }
+          }
           @keyframes flash {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.8; }
@@ -134,7 +43,27 @@ export default function LoginPage() {
             animation: flash 0.1s infinite;
           }
         `}</style>
-        
+
+        {/* The Giant Eye */}
+        <div className="relative w-full max-w-4xl aspect-square animate-[breathe_4s_ease-in-out_infinite]">
+          {/* Base Eye */}
+          <img 
+            src="/intimidating_eye.jpg" 
+            alt="The Algorithm" 
+            className="absolute inset-0 w-full h-full object-cover mix-blend-screen opacity-90 rounded-full [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_50%,transparent_100%)]"
+          />
+          
+          {/* Glitching Overlay Eye */}
+          <img 
+            src="/intimidating_eye.jpg" 
+            alt="" 
+            className="absolute inset-0 w-full h-full object-cover mix-blend-screen opacity-60 rounded-full [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_50%,transparent_100%)] animate-[glitch-eye_3s_infinite_linear_alternate-reverse]"
+          />
+        </div>
+
+        {/* Deep red glowing orb to enhance the center of the eye */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[10rem] w-[10rem] bg-red-600/40 blur-[40px] rounded-full pointer-events-none z-10 animate-pulse mix-blend-screen" />
+
         {/* Insane strobe overlay that is subtle but unsettling */}
         <div className="strobe absolute inset-0 bg-red-900/5 mix-blend-overlay pointer-events-none z-50" />
       </main>
