@@ -154,20 +154,17 @@ async def process_submission(*, file: UploadFile, round_number: int, team_id: uu
     targets = _validation_targets(
         team.team_code, stock.stock_code, assignment.predict_start, assignment.predict_end, round_number
     )
-    half = len(targets) // 2
     if round_number == 3:
         signals = [row.signal for row in rows if isinstance(row, SignalInput)]
-        result = score_signals(signals[:half], targets[:half])  # type: ignore[arg-type]
-        private_result = score_signals(signals, targets)  # type: ignore[arg-type]
+        result = score_signals(signals, targets)  # type: ignore[arg-type]
         db.add_all([SignalRow(submission_id=submission.id, timestamp_index=row.timestamp - assignment.predict_start + 1, signal=row.signal) for row in rows if isinstance(row, SignalInput)])
-        score = Score(submission_id=submission.id, team_id=team_id, round_id=round_.id, stock_id=stock.id, score=Decimal(str(result.score)), details={"sharpe_ratio": result.sharpe_ratio, "max_drawdown": result.max_drawdown, "transaction_cost_penalty": result.transaction_cost_penalty, "alpha_score": result.alpha_score, "private_score": private_result.score})
+        score = Score(submission_id=submission.id, team_id=team_id, round_id=round_.id, stock_id=stock.id, score=Decimal(str(result.score)), details={"sharpe_ratio": result.sharpe_ratio, "max_drawdown": result.max_drawdown, "transaction_cost_penalty": result.transaction_cost_penalty, "alpha_score": result.alpha_score, "private_score": result.score})
         balanced_accuracy = mcc = None
     else:
         predictions = [row.prediction for row in rows if isinstance(row, PredictionInput)]
-        result = score_binary(predictions[:half], targets[:half])  # type: ignore[arg-type]
-        private_result = score_binary(predictions, targets)  # type: ignore[arg-type]
+        result = score_binary(predictions, targets)  # type: ignore[arg-type]
         db.add_all([PredictionRow(submission_id=submission.id, timestamp_index=row.timestamp - assignment.predict_start + 1, prediction=row.prediction, confidence=row.confidence) for row in rows if isinstance(row, PredictionInput)])
-        score = Score(submission_id=submission.id, team_id=team_id, round_id=round_.id, stock_id=stock.id, score=Decimal(str(result.score)), balanced_accuracy=Decimal(str(result.balanced_accuracy)), mcc=Decimal(str(result.mcc)), details={"private_score": private_result.score})
+        score = Score(submission_id=submission.id, team_id=team_id, round_id=round_.id, stock_id=stock.id, score=Decimal(str(result.score)), balanced_accuracy=Decimal(str(result.balanced_accuracy)), mcc=Decimal(str(result.mcc)), details={"private_score": result.score})
         balanced_accuracy, mcc = result.balanced_accuracy, result.mcc
     db.add(score)
     submission.status = SubmissionStatus.SCORED
