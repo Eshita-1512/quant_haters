@@ -20,6 +20,8 @@ export const endpoints = {
   download: "/api/v1/team/data",
   upload: (roundNumber: number) => `/api/v1/submit/round/${roundNumber}`,
   leaderboard: "/api/v1/leaderboard",
+  teamMe: "/api/v1/team/me",
+  teamName: "/api/v1/team/name",
 };
 
 export const adminEndpoints = {

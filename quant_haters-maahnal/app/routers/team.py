@@ -6,13 +6,13 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
-from sqlalchemy import or_, select
+from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.dependencies import get_current_team_id, get_current_team_profile
-from app.models import DatasetRelease, DownloadEvent, EventState, TeamAssignment
-from app.schemas.team import DatasetDownload, TeamProfile
+from app.models import DatasetRelease, DownloadEvent, EventState, LeaderboardSnapshotEntry, Team, TeamAssignment
+from app.schemas.team import DatasetDownload, TeamProfile, UpdateTeamNameRequest
 from app.config import get_settings
 from app.services.datasets import (
     UnsafeStorageKeyError,
@@ -34,6 +34,33 @@ class DownloadFile:
 @router.get("/me", response_model=TeamProfile)
 def team_me(profile: TeamProfile = Depends(get_current_team_profile)) -> TeamProfile:
     return profile
+
+
+@router.patch("/name", response_model=TeamProfile)
+def update_team_name(
+    payload: UpdateTeamNameRequest,
+    team_id: uuid.UUID = Depends(get_current_team_id),
+    db: Session = Depends(get_db),
+) -> TeamProfile:
+    clean_name = payload.team_name.strip()
+    if not clean_name:
+        raise HTTPException(status_code=400, detail="Team name cannot be empty.")
+    if len(clean_name) > 50:
+        raise HTTPException(status_code=400, detail="Team name must be 50 characters or less.")
+
+    team = db.scalar(select(Team).where(Team.id == team_id))
+    if team is None:
+        raise HTTPException(status_code=404, detail="Team not found.")
+
+    team.team_name = clean_name
+    db.execute(
+        update(LeaderboardSnapshotEntry)
+        .where(LeaderboardSnapshotEntry.team_id == team_id)
+        .values(team_name=clean_name)
+    )
+    db.commit()
+
+    return get_current_team_profile(team_id=team_id, db=db)
 
 
 def get_download_response(

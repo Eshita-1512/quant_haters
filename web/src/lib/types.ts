@@ -38,6 +38,7 @@ export interface EventStatus {
   submission_type: SubmissionType;
   submissions_count?: number;
   submissions_remaining?: number;
+  latest_score?: number | null;
 }
 
 export interface DownloadResponse {
@@ -52,6 +53,18 @@ export interface UploadSuccess {
   round: number;
   submission_number: number;
   submissions_remaining: number;
+  public_score?: number;
+}
+
+export interface TeamProfile {
+  team_id: string;
+  team_name: string;
+  assigned_stock: AssignedStock;
+  train_start: number;
+  train_end: number;
+  predict_start: number;
+  predict_end: number;
+  download_available: boolean;
 }
 
 export interface AdminAuthRequest {

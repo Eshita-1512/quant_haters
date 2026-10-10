@@ -21,3 +21,7 @@ class DatasetDownload(BaseModel):
     filename: str
     download_url: str
     expires_in_seconds: int
+
+
+class UpdateTeamNameRequest(BaseModel):
+    team_name: str

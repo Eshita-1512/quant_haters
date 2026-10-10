@@ -23,4 +23,5 @@ class EventStatus(BaseModel):
     submission_type: str
     submissions_count: int = 0
     submissions_remaining: int = 10
+    latest_score: float | None = None
 

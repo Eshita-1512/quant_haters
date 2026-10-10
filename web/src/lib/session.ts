@@ -69,6 +69,9 @@ export const session = {
     write(TOKEN_KEY, token);
     write(TEAM_KEY, team);
   },
+  setTeam(team: string) {
+    write(TEAM_KEY, team);
+  },
   clear() {
     write(TOKEN_KEY, null);
     write(TEAM_KEY, null);

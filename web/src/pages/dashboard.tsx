@@ -23,6 +23,7 @@ interface SubmissionRecord {
   filename: string;
   round: string;
   submissionNumber: number;
+  score?: number;
   at: string;
 }
 
@@ -109,6 +110,7 @@ export default function DashboardPage() {
       filename,
       round: status.current_round,
       submissionNumber: result.submission_number,
+      score: result.public_score,
       at: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
     };
     setHistory((previous) => {
@@ -200,15 +202,21 @@ export default function DashboardPage() {
                   {!status.download_available && <p className="text-xs text-muted">The dataset is not available yet.</p>}
                 </Panel>
 
-                <Panel title="This round">
-                  <dl className="grid grid-cols-2 gap-4">
+                <Panel title="Round standing">
+                  <dl className="grid grid-cols-3 gap-2">
                     <div>
                       <dt className="text-xs text-muted">Submitted</dt>
                       <dd className="tabular mt-1 font-mono text-xl font-semibold">{submittedThisRound ?? "--"}</dd>
                     </div>
                     <div>
-                      <dt className="text-xs text-muted">Submissions left</dt>
+                      <dt className="text-xs text-muted">Remaining</dt>
                       <dd className="tabular mt-1 font-mono text-xl font-semibold">{remainingThisRound ?? "--"}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs text-muted">Public score</dt>
+                      <dd className="tabular mt-1 font-mono text-xl font-bold text-up">
+                        {typeof status.latest_score === "number" ? `${status.latest_score.toFixed(1)}` : "--"}
+                      </dd>
                     </div>
                   </dl>
                 </Panel>
@@ -244,7 +252,12 @@ export default function DashboardPage() {
                           <span className="text-faint">{item.at}</span>
                           <span className="text-muted">{item.round}</span>
                           <span className="truncate text-text">{item.filename}</span>
-                          <span className="tabular ml-auto text-up">#{item.submissionNumber} received</span>
+                          {typeof item.score === "number" && (
+                            <span className="tabular rounded bg-up/10 px-1.5 py-0.5 font-bold text-up">
+                              {item.score.toFixed(1)} pts
+                            </span>
+                          )}
+                          <span className="tabular ml-auto text-up">#{item.submissionNumber}</span>
                         </li>
                       ))}
                     </ul>

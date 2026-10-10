@@ -19,6 +19,7 @@ import type {
   TimerRequest,
   TokenResponse,
   UploadSuccess,
+  TeamProfile,
 } from "@/lib/types";
 
 export { ApiError };
@@ -28,7 +29,7 @@ export const UNAUTHORIZED_EVENT = "qe:unauthorized";
 type Scope = "team" | "admin" | "none";
 
 interface RequestOptions {
-  method?: "GET" | "POST";
+  method?: "GET" | "POST" | "PATCH" | "PUT";
   body?: BodyInit;
   json?: unknown;
   scope?: Scope;
@@ -179,6 +180,12 @@ const httpApi = {
     );
     return entries.map((entry) => ({ ...entry, score: Number(entry.score) }));
   },
+  getMe: () => request<TeamProfile>(endpoints.teamMe),
+  updateTeamName: (teamName: string) =>
+    request<TeamProfile>(endpoints.teamName, {
+      method: "PATCH",
+      json: { team_name: teamName },
+    }),
 };
 
 const mockApi: typeof httpApi = {
@@ -187,6 +194,31 @@ const mockApi: typeof httpApi = {
   getDownload: () => runMock("team", () => mockBackend.getDownload(session.getToken())),
   upload: (file, round) => runMock("team", () => mockBackend.upload(session.getToken(), file, round)),
   getLeaderboard: () => runMock("none", () => []),
+  getMe: () =>
+    runMock("team", () => ({
+      team_id: session.getTeam() || "DEMO",
+      team_name: session.getTeam() || "Demo Team",
+      assigned_stock: { code: "STOCK_A", name: "Alpha Corp" },
+      train_start: 1,
+      train_end: 1200,
+      predict_start: 1201,
+      predict_end: 1250,
+      download_available: true,
+    })),
+  updateTeamName: (teamName: string) =>
+    runMock("team", () => {
+      session.setTeam(teamName);
+      return {
+        team_id: session.getTeam() || "DEMO",
+        team_name: teamName,
+        assigned_stock: { code: "STOCK_A", name: "Alpha Corp" },
+        train_start: 1,
+        train_end: 1200,
+        predict_start: 1201,
+        predict_end: 1250,
+        download_available: true,
+      };
+    }),
 };
 
 type RawAdminStatus = Omit<AdminStatus, "current_round"> & { current_round: RoundCode | null };

@@ -172,4 +172,10 @@ async def process_submission(*, file: UploadFile, round_number: int, team_id: uu
     db.add(score)
     submission.status = SubmissionStatus.SCORED
     db.commit()
-    return SubmissionResult(team_id=team.team_code, round=round_number, submission_number=count + 1, submissions_remaining=round_.max_submissions_per_team - count - 1)
+    return SubmissionResult(
+        team_id=team.team_code,
+        round=round_number,
+        submission_number=count + 1,
+        submissions_remaining=round_.max_submissions_per_team - count - 1,
+        public_score=float(result.score),
+    )

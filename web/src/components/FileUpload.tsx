@@ -159,8 +159,31 @@ export default function FileUpload({
       <div aria-live="polite">
         {state.kind === "success" && (
           <div className="rounded-lg border border-up/40 bg-up-soft p-4">
-            <p className="text-sm font-semibold text-up">Submission received</p>
-            <p className="mt-1 text-xs text-muted">Scores stay hidden until the organizers publish the leaderboard.</p>
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-up">Submission Scored</p>
+              {typeof state.result.public_score === "number" && (
+                <span className="rounded bg-up/20 px-2.5 py-0.5 font-mono text-sm font-bold text-up">
+                  {state.result.public_score.toFixed(2)} pts
+                </span>
+              )}
+            </div>
+
+            {typeof state.result.public_score === "number" ? (
+              <div className="mt-3 rounded-md border border-line bg-panel p-3">
+                <div className="flex items-baseline justify-between">
+                  <span className="font-mono text-xs uppercase tracking-wider text-muted">Your Public Score</span>
+                  <span className="font-mono text-xl font-extrabold text-up">
+                    {state.result.public_score.toFixed(2)} <span className="text-xs text-muted font-normal">/ 100</span>
+                  </span>
+                </div>
+                <p className="mt-1 text-[11px] text-muted">
+                  Evaluated on 50% public test rows. This score determines your rank when organizers publish the leaderboard.
+                </p>
+              </div>
+            ) : (
+              <p className="mt-1 text-xs text-muted">Scores stay hidden until the organizers publish the leaderboard.</p>
+            )}
+
             <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-xs text-muted">
               <div>
                 <dt>Submission</dt>
