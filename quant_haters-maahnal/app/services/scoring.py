@@ -4,8 +4,8 @@ Pure-Python port of the reference engine in ``quant-challenge/scoring`` (no nump
 needed in the API image). All scores are on a 0-100 scale.
 
 Rounds 1 & 2 (UP=1 / DOWN=0 predictions)
-    BA_adj  = clip((balanced_accuracy - 0.5) / 0.5, 0, 1)   -> random guessing = 0
-    MCC_adj = clip(mcc, 0, 1)
+    BA_adj  = clip((balanced_accuracy - 0.4) / 0.6, 0, 1)   -> random guessing (0.5) = ~0.16
+    MCC_adj = clip((mcc + 0.2) / 1.2, 0, 1)                 -> random guessing (0.0) = ~0.16
     score   = 100 * (0.5 * BA_adj + 0.5 * MCC_adj)
 
 Round 3 (positions in [-1, 1], ``returns`` = return earned by holding row t's position)
@@ -64,7 +64,7 @@ def score_binary(predictions: list[int], targets: list[int]) -> BinaryScore:
     denominator = math.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
     mcc = ((tp * tn) - (fp * fn)) / denominator if denominator else 0.0
     score = 100 * (
-        W_BA * _clip((balanced_accuracy - 0.5) / 0.5, 0.0, 1.0) + W_MCC * _clip(mcc, 0.0, 1.0)
+        W_BA * _clip((balanced_accuracy - 0.4) / 0.6, 0.0, 1.0) + W_MCC * _clip((mcc + 0.2) / 1.2, 0.0, 1.0)
     )
     return BinaryScore(round(score, 2), balanced_accuracy, mcc)
 
