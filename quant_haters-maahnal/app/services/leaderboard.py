@@ -21,9 +21,11 @@ from app.schemas.leaderboard import AdminLeaderboardEntry, LeaderboardEntry, Sna
 def _best_scores(round_id: int):
     return (
         select(Score.team_id, Score.score.label("best_score"), Score.details.label("details"))
+        .select_from(Score)
+        .join(Submission, Score.submission_id == Submission.id)
         .distinct(Score.team_id)
         .where(Score.round_id == round_id, Score.is_valid.is_(True))
-        .order_by(Score.team_id, Score.score.desc())
+        .order_by(Score.team_id, Submission.created_at.desc())
         .subquery()
     )
 
