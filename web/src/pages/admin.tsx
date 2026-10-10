@@ -32,7 +32,7 @@ function participantView(status: AdminStatus, seconds: number) {
     return { label: "Alpha desk live", tone: "text-alpha border-alpha/40 bg-alpha-soft" };
   }
   if (status.current_round === "R2" || status.flash_crash_active) {
-    if (ended) return { label: "Market stabilizing screen", tone: "text-[#ff8f9b] border-[#ff8f9b]/40 bg-down-soft" };
+    if (ended) return { label: "Market stabilizing screen", tone: "text-recover border-recover/40 bg-down-soft" };
     if (paused) return { label: "Crash mode, paused", tone: "text-warn border-warn/40 bg-warn-soft" };
     return { label: "Flash crash screen", tone: "text-down border-down/50 bg-down-soft" };
   }
@@ -70,14 +70,14 @@ function AdminLogin() {
         <span className="grid h-8 w-8 place-items-center rounded-md border border-warn/50 bg-panel font-mono text-sm font-semibold text-warn">
           A
         </span>
-        <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted">Organizer access</span>
+        <span className="font-mono text-xs uppercase tracking-[0.12em] text-muted">Organizer access</span>
       </div>
-      <div className="rounded-2xl border border-line bg-panel p-6 shadow-2xl sm:p-8">
+      <div className="rounded-lg border border-line bg-panel p-6 sm:p-8">
         <h1 className="text-xl font-semibold">Control room</h1>
         <p className="mt-1 text-sm text-muted">Admins only. Every action here is visible to all teams.</p>
         <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4" noValidate>
           <label className="flex flex-col gap-1.5">
-            <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">Username</span>
+            <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted">Username</span>
             <input
               value={username}
               onChange={(event) => setUsername(event.target.value)}
@@ -88,7 +88,7 @@ function AdminLogin() {
             />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">Password</span>
+            <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted">Password</span>
             <input
               type="password"
               value={password}
@@ -157,7 +157,7 @@ function AdminConsole({ user }: { user: string }) {
   return (
     <>
       <header className="sticky top-0 z-30 border-b border-line bg-bg/85 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-7xl items-center gap-4 px-4 sm:px-6">
+        <div className="mx-auto flex h-14 max-w-[120rem] items-center gap-4 px-6 md:px-10 xl:px-16">
           <span className="grid h-7 w-7 place-items-center rounded-md border border-warn/50 bg-panel font-mono text-xs font-semibold text-warn">
             A
           </span>
@@ -193,7 +193,7 @@ function AdminConsole({ user }: { user: string }) {
         </div>
       </header>
 
-      <main className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-6 sm:px-6">
+      <main className="mx-auto flex max-w-[120rem] flex-col gap-5 px-6 md:px-10 xl:px-16 py-6">
         {(error || actionError) && (
           <div role="alert" className="rounded-lg border border-down/50 bg-down-soft px-4 py-2.5 text-sm text-down">
             {actionError ?? `Connection problem: ${error}`}
@@ -202,16 +202,16 @@ function AdminConsole({ user }: { user: string }) {
 
         {!status ? (
           <div className="grid gap-5">
-            <div className="h-28 animate-pulse rounded-xl border border-line bg-panel" />
+            <div className="h-28 animate-pulse rounded-md border border-line bg-panel" />
             <div className="grid gap-5 lg:grid-cols-3">
               {[0, 1, 2].map((index) => (
-                <div key={index} className="h-80 animate-pulse rounded-xl border border-line bg-panel" />
+                <div key={index} className="h-80 animate-pulse rounded-md border border-line bg-panel" />
               ))}
             </div>
           </div>
         ) : (
           <>
-            <section className="grid gap-4 rounded-xl border border-line bg-panel p-5 md:grid-cols-[1fr_auto] md:items-center">
+            <section className="grid gap-4 rounded-md border border-line bg-panel p-5 md:grid-cols-[1fr_auto] md:items-center">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-mono text-xs text-muted">{status.current_round}</span>
@@ -224,7 +224,7 @@ function AdminConsole({ user }: { user: string }) {
               </div>
               <dl className="grid grid-cols-3 gap-6 md:text-right">
                 <div>
-                  <dt className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">Participants see</dt>
+                  <dt className="font-mono text-[10px] uppercase tracking-[0.08em] text-muted">Participants see</dt>
                   <dd className="mt-1">
                     {view && (
                       <span className={`inline-block rounded-full border px-2.5 py-1 text-xs font-medium ${view.tone}`}>
@@ -234,11 +234,11 @@ function AdminConsole({ user }: { user: string }) {
                   </dd>
                 </div>
                 <div>
-                  <dt className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">Submissions</dt>
+                  <dt className="font-mono text-[10px] uppercase tracking-[0.08em] text-muted">Submissions</dt>
                   <dd className="tabular mt-1 font-mono text-xl font-semibold">{status.submissions_count}</dd>
                 </div>
                 <div>
-                  <dt className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">Teams</dt>
+                  <dt className="font-mono text-[10px] uppercase tracking-[0.08em] text-muted">Teams</dt>
                   <dd className="tabular mt-1 font-mono text-xl font-semibold">{status.teams_total}</dd>
                 </div>
               </dl>

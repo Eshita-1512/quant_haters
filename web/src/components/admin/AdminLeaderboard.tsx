@@ -17,9 +17,9 @@ interface RankedEntry extends AdminLeaderboardEntry {
 const ROUND_TABS: RoundCode[] = ["R1", "R2", "R3"];
 
 const rankTone: Record<number, string> = {
-  1: "text-[#f5c542]",
-  2: "text-[#c9d1db]",
-  3: "text-[#d99058]",
+  1: "text-gold",
+  2: "text-silver",
+  3: "text-bronze",
 };
 
 function rankEntries(entries: AdminLeaderboardEntry[], sortKey: "score" | "private_score"): RankedEntry[] {
@@ -146,10 +146,10 @@ export default function AdminLeaderboard({ currentRound }: AdminLeaderboardProps
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-xl border border-line">
+      <div className="overflow-x-auto rounded-md border border-line">
         <table className={`w-full border-collapse ${fullscreen ? "text-lg" : "text-sm"}`}>
           <thead>
-            <tr className="border-b border-line font-mono text-[11px] uppercase tracking-[0.14em] text-muted">
+            <tr className="border-b border-line font-mono text-[11px] uppercase tracking-[0.08em] text-muted">
               <th scope="col" className="w-16 px-4 py-3 text-left font-medium">Rank</th>
               <th scope="col" className="px-2 py-3 text-left font-medium">Team</th>
               <th scope="col" className="px-2 py-3 text-left font-medium">Code</th>

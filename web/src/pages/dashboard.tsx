@@ -144,7 +144,7 @@ export default function DashboardPage() {
       </Head>
       <AppHeader team={team} mode={mode} />
 
-      <main className="mx-auto flex max-w-6xl flex-col gap-5 px-4 py-6 sm:px-6 sm:py-8">
+      <main className="mx-auto flex max-w-[120rem] flex-col gap-5 px-6 md:px-10 xl:px-16 py-6 sm:py-8">
         {error && (
           <div role="status" className="rounded-lg border border-warn/40 bg-warn-soft px-4 py-2.5 text-sm text-warn">
             Connection problem: {error} {status ? "Showing the last known state." : "Retrying..."}
@@ -153,10 +153,10 @@ export default function DashboardPage() {
 
         {!status ? (
           <div className="grid gap-5">
-            <div className="h-36 animate-pulse rounded-xl border border-line bg-panel" />
+            <div className="h-36 animate-pulse rounded-md border border-line bg-panel" />
             <div className="grid gap-5 lg:grid-cols-3">
-              <div className="h-64 animate-pulse rounded-xl border border-line bg-panel" />
-              <div className="h-64 animate-pulse rounded-xl border border-line bg-panel lg:col-span-2" />
+              <div className="h-64 animate-pulse rounded-md border border-line bg-panel" />
+              <div className="h-64 animate-pulse rounded-md border border-line bg-panel lg:col-span-2" />
             </div>
           </div>
         ) : status.current_round === "R1" && status.round_phase === "scheduled" ? (
@@ -170,7 +170,7 @@ export default function DashboardPage() {
               <CountdownTimer status={status} seconds={seconds} />
             </Panel>
 
-            <div className="grid gap-5 lg:grid-cols-3">
+            <div className="rise-in grid gap-5 lg:grid-cols-3">
               <div className="flex flex-col gap-5">
                 <Panel title="Assigned stock">
                   <p className={`font-mono text-3xl font-semibold tracking-tight ${mode === "crash" ? "text-down" : ""}`}>
@@ -179,7 +179,7 @@ export default function DashboardPage() {
                   <p className="mt-1 text-sm text-muted">{status.assigned_stock.name}</p>
                 </Panel>
 
-                <Panel title="Dataset">
+                <Panel title="Upload submission">
                   <p className="mb-4 text-sm text-muted">Your team&apos;s training and prediction rows for this round.</p>
                   <DownloadButton label="Download dataset" disabled={!status.download_available} />
                   {!status.download_available && <p className="text-xs text-muted">The dataset is not available yet.</p>}
@@ -200,7 +200,7 @@ export default function DashboardPage() {
               </div>
 
               <Panel
-                title="Upload dataset"
+                title="Upload submission"
                 aside={<span className="font-mono text-[11px] text-faint">{status.current_round}</span>}
                 className="lg:col-span-2"
               >
@@ -239,7 +239,7 @@ export default function DashboardPage() {
             </div>
 
             {status.submission_type === "signal" && (
-              <section className="rise-in rounded-2xl border border-line bg-panel p-5 sm:p-6">
+              <section className="rise-in rounded-lg border border-line bg-panel p-5 sm:p-6">
                 <PositionPreview file={draft} />
               </section>
             )}

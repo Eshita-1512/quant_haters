@@ -36,7 +36,7 @@ export default function FlashCrashControl({ status, busy, run }: FlashCrashContr
   return (
     <div className="flex flex-col gap-5">
       <div
-        className={`flex items-center justify-between gap-4 rounded-xl border p-4 transition-colors duration-500 ${
+        className={`flex items-center justify-between gap-4 rounded-md border p-4 transition-colors duration-500 ${
           active ? "border-down/60 bg-down-soft" : "border-line-strong bg-panel-2"
         }`}
       >

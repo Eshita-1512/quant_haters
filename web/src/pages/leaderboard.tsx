@@ -1,6 +1,6 @@
 import Head from "next/head";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import AppHeader from "@/components/AppHeader";
 import Panel from "@/components/Panel";
 import { api } from "@/lib/api";
@@ -9,9 +9,9 @@ import { useSession } from "@/lib/session";
 import type { LeaderboardEntry } from "@/lib/types";
 
 const rankTone: Record<number, string> = {
-  1: "text-[#f5c542] border-[#f5c542]/40 bg-[#f5c542]/10",
-  2: "text-[#c9d1db] border-[#c9d1db]/40 bg-[#c9d1db]/10",
-  3: "text-[#d99058] border-[#d99058]/40 bg-[#d99058]/10",
+  1: "text-gold border-gold/40 bg-gold/10",
+  2: "text-silver border-silver/40 bg-silver/10",
+  3: "text-bronze border-bronze/40 bg-bronze/10",
 };
 
 export default function PublicLeaderboardPage() {
@@ -43,6 +43,12 @@ export default function PublicLeaderboardPage() {
     return () => clearInterval(interval);
   }, [fetchLeaderboard]);
 
+  useEffect(() => {
+    const onChange = () => setFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+
   const filtered = useMemo(() => {
     if (!query.trim()) return entries;
     const q = query.trim().toLowerCase();
@@ -52,10 +58,8 @@ export default function PublicLeaderboardPage() {
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(() => {});
-      setFullscreen(true);
     } else {
       document.exitFullscreen().catch(() => {});
-      setFullscreen(false);
     }
   };
 
@@ -66,14 +70,14 @@ export default function PublicLeaderboardPage() {
       </Head>
       <AppHeader team={activeTeam || undefined} />
 
-      <main className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
+      <main className="mx-auto flex max-w-[120rem] flex-col gap-6 px-6 md:px-10 xl:px-16 py-6 sm:py-8">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-up animate-pulse" />
               <span className="font-mono text-xs uppercase tracking-wider text-muted">Official Standings</span>
             </div>
-            <h1 className="mt-1 text-3xl font-bold tracking-tight">Leaderboard</h1>
+            <h1 className="mt-1 font-display text-5xl font-extrabold uppercase leading-none">Leaderboard</h1>
             <p className="text-sm text-muted">
               Official snapshots published by organizers. Auto-updates every 10 seconds.
             </p>
@@ -102,6 +106,7 @@ export default function PublicLeaderboardPage() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search team..."
+                aria-label="Search teams"
                 className="h-10 w-full max-w-xs rounded-lg border border-line-strong bg-bg px-3 font-mono text-xs outline-none focus:border-accent"
               />
               <span className="font-mono text-xs text-muted">
@@ -121,18 +126,15 @@ export default function PublicLeaderboardPage() {
               </div>
             ) : entries.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">
-                <span className="grid h-12 w-12 place-items-center rounded-xl border border-line bg-bg font-mono text-lg text-muted">
-                  📊
-                </span>
-                <p className="mt-4 text-base font-medium">No standings published yet</p>
+                <p className="font-display text-3xl font-extrabold uppercase">No standings published yet</p>
                 <p className="mt-1 max-w-sm text-sm text-muted">
                   Organizers publish official snapshots throughout the event. Once published, team rankings will appear here.
                 </p>
                 <Link
-                  href="/dashboard"
-                  className="mt-6 rounded-lg bg-text px-4 py-2 text-xs font-semibold text-bg transition-colors hover:bg-text/90"
+                  href={activeTeam ? "/dashboard" : "/"}
+                  className="press mt-6 rounded-md bg-text px-4 py-2 text-xs font-semibold text-bg hover:bg-text/90"
                 >
-                  Return to Dashboard
+                  {activeTeam ? "Return to Dashboard" : "Back to overview"}
                 </Link>
               </div>
             ) : (
@@ -147,7 +149,7 @@ export default function PublicLeaderboardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line/60">
-                    {filtered.map((item) => {
+                    {filtered.map((item, index) => {
                       const isPodium = item.rank <= 3;
                       const badge = rankTone[item.rank] || "text-muted border-line";
                       const isMyTeam = activeTeam && item.team.toLowerCase().includes(activeTeam.toLowerCase());
@@ -155,9 +157,10 @@ export default function PublicLeaderboardPage() {
                       return (
                         <tr
                           key={item.team}
-                          className={`transition-colors hover:bg-panel-2/50 ${
-                            isMyTeam ? "bg-accent-soft/30 font-semibold" : ""
+                          className={`row-in transition-colors hover:bg-panel-2/50 ${
+                            isMyTeam ? "bg-accent-soft font-semibold" : ""
                           }`}
+                          style={{ "--d": `${Math.min(index, 12) * 35}ms` } as CSSProperties}
                         >
                           <td className="py-3 px-3 font-mono">
                             {isPodium ? (

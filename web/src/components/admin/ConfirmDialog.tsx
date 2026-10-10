@@ -37,7 +37,7 @@ export default function ConfirmDialog({
         aria-modal="true"
         aria-labelledby="confirm-title"
         onClick={(event) => event.stopPropagation()}
-        className="crash-in w-full max-w-md rounded-2xl border border-line-strong bg-panel p-6 shadow-2xl"
+        className="crash-in w-full max-w-md rounded-lg border border-line-strong bg-panel p-6"
       >
         <h2 id="confirm-title" className={`text-lg font-semibold ${tone === "danger" ? "text-down" : ""}`}>
           {title}

@@ -18,7 +18,7 @@ export default function AlphaHero({ status }: AlphaHeroProps) {
   const live = status.round_phase === "live" || status.round_phase === "flash_crash";
 
   return (
-    <section className="rise-in relative overflow-hidden rounded-2xl border border-alpha/30 bg-panel">
+    <section className="rise-in relative overflow-hidden rounded-lg border border-alpha/30 bg-panel">
       <div className="pointer-events-none absolute -left-1/4 -top-1/2 h-[140%] w-[70%] rounded-full bg-alpha/20 blur-3xl drift-glow" />
       <div
         className="pointer-events-none absolute -bottom-1/2 -right-1/4 h-[140%] w-[60%] rounded-full bg-alpha-2/10 blur-3xl drift-glow"
@@ -43,7 +43,7 @@ export default function AlphaHero({ status }: AlphaHeroProps) {
       <div className="relative grid gap-8 p-6 sm:p-8 ">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-mono text-xs uppercase tracking-[0.3em] text-alpha">Round 3</span>
+            <span className="font-mono text-xs uppercase tracking-[0.12em] text-alpha">Round 3</span>
             <span
               className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono text-[11px] uppercase tracking-wider ${
                 live ? "border-alpha-2/40 bg-alpha-2/10 text-alpha-2" : "border-line-strong text-muted"
@@ -53,7 +53,7 @@ export default function AlphaHero({ status }: AlphaHeroProps) {
               {live ? "Desk open" : phaseLabels[status.round_phase]}
             </span>
           </div>
-          <h1 className="text-alpha-gradient mt-3 text-6xl font-black leading-none tracking-tight sm:text-7xl">ALPHA</h1>
+          <h1 className="text-alpha mt-3 text-6xl font-display font-black uppercase leading-none tracking-tight sm:text-7xl">ALPHA</h1>
           <p className="mt-3 max-w-lg text-sm leading-relaxed text-text/85 sm:text-base">
             Convert your signal into positions between -1 (full short) and +1 (full long) for{" "}
             <span className="font-mono text-text">{status.assigned_stock.code}</span>. Your book is backtested with

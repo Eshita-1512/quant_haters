@@ -57,14 +57,14 @@ export default function LoginPage() {
       <Head>
         <title>Log in | BigShort</title>
       </Head>
-      <main className="mx-auto grid min-h-screen max-w-6xl items-center gap-12 px-4 py-12 sm:px-6 lg:grid-cols-[1.1fr_1fr]">
+      <main className="mx-auto grid min-h-screen max-w-[120rem] items-center gap-12 px-6 md:px-10 xl:px-16 py-12 lg:grid-cols-[1.1fr_1fr]">
         <div>
-          <Link href="/" className="font-mono text-xs uppercase tracking-[0.3em] text-muted hover:text-text">
-            BigShort
-          </Link>
-          <h1 className="mt-6 text-5xl font-black leading-[1] tracking-tighter sm:text-6xl">BIGSHORT</h1>
+          <h1 className="flex flex-wrap items-baseline gap-x-[0.22em] font-display text-7xl font-extrabold uppercase leading-[0.85] sm:text-8xl">
+            <span>Big</span>
+            <span className="text-down">Short</span>
+          </h1>
           <p className="mt-4 max-w-md text-muted">Log in with your team code and password.</p>
-          <ol className="mt-10 hidden max-w-md gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid">
+          <ol className="mt-10 hidden max-w-md gap-px overflow-hidden rounded-md border border-line bg-line sm:grid">
             {schedule.map((step) => (
               <li key={step.code} className="flex items-center gap-4 bg-panel px-4 py-3">
                 <span
@@ -85,7 +85,7 @@ export default function LoginPage() {
           </Link>
         </div>
 
-        <div className="rounded-2xl border border-line bg-panel p-6 shadow-2xl sm:p-8">
+        <div className="rise-in rounded-lg border border-line bg-panel p-6 sm:p-8">
           <h2 className="text-lg font-semibold">Log in</h2>
           <p className="mt-1 text-sm text-muted">Your organizers gave your team a team code and password. Everyone on your team uses the same login.</p>
 
@@ -97,7 +97,7 @@ export default function LoginPage() {
 
           <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4" noValidate>
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="login-identifier" className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">
+              <label htmlFor="login-identifier" className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted">
                 Team code
               </label>
               <input
@@ -113,7 +113,7 @@ export default function LoginPage() {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="login-password" className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">
+              <label htmlFor="login-password" className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted">
                 Password
               </label>
               <PasswordInput
@@ -126,13 +126,17 @@ export default function LoginPage() {
             </div>
 
             <div aria-live="polite" className="min-h-5">
-              {error && <p className="text-sm text-down">{error}</p>}
+              {error && (
+                <p key={error} className="nudge text-sm text-down">
+                  {error}
+                </p>
+              )}
             </div>
 
             <button
               type="submit"
               disabled={submitting}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-text text-sm font-semibold text-bg transition-colors hover:bg-text/90 disabled:cursor-wait disabled:border disabled:border-line-strong disabled:bg-panel-2 disabled:text-muted"
+              className="press inline-flex h-11 items-center justify-center gap-2 rounded-md bg-text text-sm font-semibold text-bg hover:bg-text/90 disabled:cursor-wait disabled:border disabled:border-line-strong disabled:bg-panel-2 disabled:text-muted"
             >
               {submitting && <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />}
               {submitting ? "Logging in..." : "Enter the market"}

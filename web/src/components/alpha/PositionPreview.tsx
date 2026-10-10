@@ -55,7 +55,7 @@ function Bars({ positions, ghost }: { positions: number[]; ghost?: boolean }) {
 function Stat({ label, value, tone = "text-text" }: { label: string; value: string; tone?: string }) {
   return (
     <div className="rounded-lg border border-line bg-bg/50 px-3 py-2.5">
-      <dt className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">{label}</dt>
+      <dt className="font-mono text-[10px] uppercase tracking-[0.08em] text-muted">{label}</dt>
       <dd className={`tabular mt-1 font-mono text-lg font-semibold ${tone}`}>{value}</dd>
     </div>
   );
@@ -100,7 +100,7 @@ export default function PositionPreview({ file }: PositionPreviewProps) {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">Book preview</p>
+            <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted">Book preview</p>
             {isDemo && (
               <span className="rounded bg-alpha-soft px-1.5 py-0.5 font-mono text-[10px] text-alpha">Demo sample</span>
             )}
@@ -140,7 +140,7 @@ export default function PositionPreview({ file }: PositionPreviewProps) {
         </div>
       </div>
 
-      <div className="relative h-56 rounded-xl border border-line bg-bg/60 p-3 text-alpha sm:h-64">
+      <div className="relative h-56 rounded-md border border-line bg-bg/60 p-3 text-alpha sm:h-64">
         <span className="absolute left-3 top-2 font-mono text-[10px] text-faint">+1 long</span>
         <span className="absolute bottom-2 left-3 font-mono text-[10px] text-faint">-1 short</span>
         {book ? <Bars key={isDemo ? "demo" : file?.name} positions={book.positions} /> : <Bars positions={GHOST} ghost />}

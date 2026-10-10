@@ -89,7 +89,7 @@ export default function ResultsControls({ currentRound }: ResultsControlsProps) 
 
       {backtest && (
         <div>
-          <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.14em] text-muted">Final rankings</p>
+          <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.08em] text-muted">Final rankings</p>
           {backtest.rankings.length === 0 ? (
             <p className="text-sm text-faint">No teams were ranked.</p>
           ) : (

@@ -7,9 +7,15 @@ const ADMIN_TOKEN_KEY = "qe.admin.token";
 const ADMIN_USER_KEY = "qe.admin.user";
 const SESSION_EVENT = "qe:session";
 
+// Team sessions live in sessionStorage so they end with the tab; a returning visitor
+// must log in again. Admin sessions keep using localStorage.
+function store(key: string): Storage {
+  return key.startsWith("qe.admin.") ? window.localStorage : window.sessionStorage;
+}
+
 function read(key: string): string | null {
   try {
-    return window.localStorage.getItem(key);
+    return store(key).getItem(key);
   } catch {
     return null;
   }
@@ -17,8 +23,8 @@ function read(key: string): string | null {
 
 function write(key: string, value: string | null) {
   try {
-    if (value === null) window.localStorage.removeItem(key);
-    else window.localStorage.setItem(key, value);
+    if (value === null) store(key).removeItem(key);
+    else store(key).setItem(key, value);
   } catch {}
   window.dispatchEvent(new Event(SESSION_EVENT));
 }

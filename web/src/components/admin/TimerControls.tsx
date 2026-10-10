@@ -47,7 +47,7 @@ export default function TimerControls({ status, seconds, busy, run }: TimerContr
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-3">
         <div>
-          <p className={`font-mono text-[11px] uppercase tracking-[0.14em] ${stateTone}`}>{state}</p>
+          <p className={`font-mono text-[11px] uppercase tracking-[0.08em] ${stateTone}`}>{state}</p>
           <p className="tabular font-mono text-5xl font-semibold leading-none tracking-tight">{formatDuration(seconds)}</p>
         </div>
         <button

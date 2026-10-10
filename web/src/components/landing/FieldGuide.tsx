@@ -1,3 +1,6 @@
+import type { CSSProperties } from "react";
+import { useInView } from "@/hooks/useInView";
+
 const TERMS = [
   {
     term: "Long and short",
@@ -32,22 +35,31 @@ const TERMS = [
 ];
 
 export default function FieldGuide() {
+  const { ref, inView } = useInView<HTMLDListElement>();
   return (
-    <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {TERMS.map((item) => (
-        <li key={item.term} className="flex flex-col rounded-xl border border-line bg-panel p-5">
-          <h3 className="font-semibold tracking-tight">{item.term}</h3>
-          <p className="mt-2 flex-1 text-sm leading-relaxed text-muted">{item.body}</p>
-          <a
-            href={item.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-3 inline-flex min-h-11 items-center self-start text-sm text-accent underline-offset-4 hover:underline"
-          >
-            Read more
-          </a>
-        </li>
+    <dl ref={ref} className={`grid gap-x-14 sm:grid-cols-2 ${inView ? "is-visible" : ""}`}>
+      {TERMS.map((item, index) => (
+        <div
+          key={item.term}
+          className="reveal-item border-t border-line py-7"
+          style={{ "--i-delay": `${index * 70}ms` } as CSSProperties}
+        >
+          <dt className="font-display text-3xl font-extrabold uppercase leading-none">{item.term}</dt>
+          <dd className="mt-3 text-sm leading-relaxed text-muted sm:text-base">{item.body}</dd>
+          <dd className="mt-2">
+            <a
+              href={item.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-11 items-center gap-1 text-sm text-accent underline decoration-accent/40 underline-offset-4 transition-colors hover:decoration-accent"
+            >
+              Read more on CFI
+              <span aria-hidden="true">↗</span>
+              <span className="sr-only"> (opens in a new tab)</span>
+            </a>
+          </dd>
+        </div>
       ))}
-    </ul>
+    </dl>
   );
 }
