@@ -137,6 +137,21 @@ export default function DashboardPage() {
   const title =
     mode === "crash" ? "FLASH CRASH" : mode === "alpha" ? "Alpha desk" : "Dashboard";
 
+  const [waitingExit, setWaitingExit] = useState(false);
+  const wasScheduled = status?.current_round === "R1" && status?.round_phase === "scheduled";
+  
+  useEffect(() => {
+    if (status?.current_round === "R1" && status?.round_phase !== "scheduled" && !waitingExit) {
+      setWaitingExit(true);
+      const timer = setTimeout(() => {
+        setWaitingExit(false);
+      }, 3500); // 3.5 seconds burn time
+      return () => clearTimeout(timer);
+    }
+  }, [status?.current_round, status?.round_phase]);
+
+  const showWaitingRoom = wasScheduled || waitingExit;
+
   return (
     <>
       <Head>
@@ -159,8 +174,8 @@ export default function DashboardPage() {
               <div className="h-64 animate-pulse rounded-md border border-line bg-panel lg:col-span-2" />
             </div>
           </div>
-        ) : status.current_round === "R1" && status.round_phase === "scheduled" ? (
-          <WaitingRoom status={status} team={team} />
+        ) : showWaitingRoom ? (
+          <WaitingRoom status={status} team={team} isStarting={waitingExit} />
         ) : (
           <>
             {mode === "crash" && <CrashHero message={status.flash_crash_message} />}

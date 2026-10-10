@@ -659,3 +659,60 @@ button:active:not(:disabled) {
     animation: none;
   }
 }
+
+@keyframes smolder {
+  0%, 100% { filter: brightness(0.9) sepia(0.4) hue-rotate(-10deg) saturate(1.2); }
+  50% { filter: brightness(1.1) sepia(0.6) hue-rotate(-20deg) saturate(1.5); }
+}
+
+@keyframes burn-effect {
+  0% { 
+    filter: brightness(1.1) sepia(0.6) hue-rotate(-20deg) saturate(1.5);
+    transform: scale(1);
+    opacity: 1;
+  }
+  40% {
+    filter: brightness(0.5) sepia(1) hue-rotate(-50deg) saturate(3) contrast(1.8);
+    transform: scale(0.98);
+    opacity: 1;
+  }
+  80% {
+    filter: brightness(0.1) sepia(1) hue-rotate(-50deg) saturate(1) contrast(2);
+    transform: scale(0.95);
+    opacity: 0.4;
+  }
+  100% { 
+    filter: brightness(0) opacity(0);
+    transform: scale(0.9);
+    opacity: 0;
+  }
+}
+
+.animate-smolder {
+  animation: smolder 4s ease-in-out infinite;
+}
+
+.animate-burn-effect {
+  animation: burn-effect 3.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes flame-flicker {
+  0%, 100% { opacity: 0.9; transform: translateY(0) scaleY(1); filter: blur(2px); }
+  25% { opacity: 0.6; transform: translateY(-5px) scaleY(1.1); filter: blur(4px); }
+  75% { opacity: 0.4; transform: translateY(2px) scaleY(0.9); filter: blur(3px); }
+}
+
+.animate-flame-flicker {
+  animation: flame-flicker 0.15s infinite alternate;
+}
+
+@keyframes blink {
+  0%, 92% { transform: translate(-50%, -50%) scaleY(0); }
+  96% { transform: translate(-50%, -50%) scaleY(1); }
+  100% { transform: translate(-50%, -50%) scaleY(0); }
+}
+
+.animate-blink {
+  animation: blink 5s ease-in-out infinite;
+}
+

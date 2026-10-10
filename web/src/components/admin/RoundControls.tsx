@@ -98,6 +98,21 @@ export default function RoundControls({ status, busy, run }: RoundControlsProps)
           {pending.code === "R1" && status.flash_crash_active && " This also turns the flash crash off."}
         </ConfirmDialog>
       )}
+      
+      <div className="mt-4 border-t border-line pt-4">
+        <button
+          type="button"
+          disabled={busy !== null}
+          onClick={() => {
+            if (confirm("Are you sure you want to reset the entire event state back to Round 1 (Scheduled)? This does not delete teams or submissions, but restarts the event clock.")) {
+              run("Reset Event State", () => adminApi.resetEvent());
+            }
+          }}
+          className="rounded-md border border-warn px-3 py-1.5 text-xs text-warn transition-colors hover:bg-warn-soft disabled:opacity-40"
+        >
+          Reset Event State
+        </button>
+      </div>
     </div>
   );
 }

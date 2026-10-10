@@ -234,6 +234,8 @@ const httpAdminApi = {
   publishSnapshot: () => request<SnapshotResult>(adminEndpoints.snapshot, { method: "POST", scope: "admin" }),
   runFinalBacktest: () =>
     request<FinalBacktestResult>(adminEndpoints.finalBacktest, { method: "POST", scope: "admin", timeoutMs: 60000 }),
+  resetEvent: () =>
+    request<AdminStatus>(adminEndpoints.reset, { method: "POST", scope: "admin" }),
 };
 
 const mockAdminApi: typeof httpAdminApi = {
@@ -245,6 +247,7 @@ const mockAdminApi: typeof httpAdminApi = {
   getLeaderboard: (round) => runMock("admin", () => mockAdminBackend.getLeaderboard(adminSession.getToken(), round)),
   publishSnapshot: () => runMock("admin", () => mockAdminBackend.publishSnapshot(adminSession.getToken())),
   runFinalBacktest: () => runMock("admin", () => mockAdminBackend.runFinalBacktest(adminSession.getToken())),
+  resetEvent: () => runMock("admin", () => mockAdminBackend.getStatus(adminSession.getToken())),
 };
 
 export const api = config.useMocks ? mockApi : httpApi;

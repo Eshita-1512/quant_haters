@@ -205,3 +205,47 @@ def apply_start_round(
 @router.post("/round", response_model=AdminStatus)
 def admin_start_round(status: AdminStatus = Depends(apply_start_round)) -> AdminStatus:
     return status
+
+
+def apply_reset_event(
+    admin_id: uuid.UUID = Depends(get_current_admin_id),
+    db: Session = Depends(get_db),
+) -> AdminStatus:
+    state = db.scalar(select(EventState).where(EventState.id == 1).with_for_update())
+    if state is None:
+        raise HTTPException(status_code=404, detail="Event state is not configured.")
+    rounds = {round_.round_code: round_ for round_ in db.scalars(select(Round).with_for_update()).all()}
+    now = datetime.now(UTC)
+    
+    for round_code, round_ in rounds.items():
+        round_.phase = RoundPhase.SCHEDULED
+        round_.paused_remaining_seconds = None
+        round_.starts_at = now + timedelta(hours=1)
+        round_.ends_at = now + timedelta(hours=2)
+    
+    from sqlalchemy import delete
+    from app.models import PredictionRow, SignalRow, Score, Submission, SubmissionRateLimit, DownloadEvent, LeaderboardSnapshotEntry, LeaderboardSnapshot
+
+    db.execute(delete(PredictionRow))
+    db.execute(delete(SignalRow))
+    db.execute(delete(Score))
+    db.execute(delete(SubmissionRateLimit))
+    db.execute(delete(Submission))
+    db.execute(delete(DownloadEvent))
+    db.execute(delete(LeaderboardSnapshotEntry))
+    db.execute(delete(LeaderboardSnapshot))
+
+    state.current_round_id = rounds.get("R1").id if "R1" in rounds else None
+    state.flash_crash_active = False
+    state.flash_crash_message = None
+    state.flash_crash_triggered_at = None
+    state.state_version += 1
+
+    db.add(AdminAuditLog(admin_id=admin_id, action="RESET_EVENT", details={}))
+    db.commit()
+    return build_admin_status(db, now)
+
+
+@router.post("/reset", response_model=AdminStatus)
+def admin_reset_event(status: AdminStatus = Depends(apply_reset_event)) -> AdminStatus:
+    return status
