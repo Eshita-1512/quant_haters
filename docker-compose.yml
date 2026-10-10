@@ -1,0 +1,61 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: dz_quant
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_secure_2026}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d dz_quant"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: ./quant_haters-maahnal
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://postgres:${POSTGRES_PASSWORD:-postgres_secure_2026}@db:5432/dz_quant
+      JWT_SECRET: ${JWT_SECRET:-e7b4c91a82f34d109f2b84c8a20d75c94e82b7194ad825e68310c839d042bf92}
+      CORS_ORIGINS: '["*"]'
+      PRIVATE_DATA_DIR: /app/private_data
+      MASTER_VALIDATION_PATH: /app/scripts/master_validation.csv
+      HIDDEN_VALIDATION_PATH: /app/private_data/hidden_validation.csv
+    volumes:
+      - private_data:/app/private_data
+      - ../team_files:/quant/team_files:ro
+      - ../generated_test:/quant/generated_test:ro
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ""
+        NEXT_PUBLIC_USE_MOCKS: "false"
+    restart: unless-stopped
+    depends_on:
+      - api
+
+  proxy:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - web
+      - api
+
+volumes:
+  postgres_data:
+  private_data:

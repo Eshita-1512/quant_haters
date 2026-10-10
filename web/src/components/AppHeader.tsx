@@ -16,7 +16,7 @@ export default function AppHeader({ team, mode = "default" }: AppHeaderProps) {
 
   const signOut = () => {
     session.clear();
-    router.replace("/");
+    router.replace("/login");
   };
 
   return (
@@ -30,8 +30,26 @@ export default function AppHeader({ team, mode = "default" }: AppHeaderProps) {
           >
             Q
           </span>
-          <span className="hidden text-sm font-semibold tracking-tight sm:inline">Quant ML Trading Challenge</span>
+          <span className="hidden text-sm font-semibold tracking-tight sm:inline">BigShort</span>
         </Link>
+        <nav className="flex items-center gap-3 ml-2 border-l border-line pl-3">
+          <Link
+            href="/dashboard"
+            className={`font-mono text-xs transition-colors ${
+              router.pathname === "/dashboard" ? "text-text font-semibold" : "text-muted hover:text-text"
+            }`}
+          >
+            Desk
+          </Link>
+          <Link
+            href="/leaderboard"
+            className={`font-mono text-xs transition-colors ${
+              router.pathname === "/leaderboard" ? "text-text font-semibold" : "text-muted hover:text-text"
+            }`}
+          >
+            Standings
+          </Link>
+        </nav>
         {alpha && (
           <span className="flex items-center gap-1.5 rounded-full border border-alpha/40 bg-alpha-soft px-2.5 py-0.5 font-mono text-[11px] uppercase tracking-wider text-alpha">
             <span className="h-1.5 w-1.5 rounded-full bg-alpha-2" />

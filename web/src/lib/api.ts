@@ -12,6 +12,7 @@ import type {
   EventStatus,
   FinalBacktestResult,
   FlashCrashRequest,
+  LeaderboardEntry,
   RoundCode,
   SnapshotResult,
   StartRoundRequest,
@@ -51,11 +52,29 @@ function tokenFor(scope: Scope): string | null {
   return null;
 }
 
+function extractFieldErrors(body: unknown): Record<string, string> | undefined {
+  if (!body || typeof body !== "object") return undefined;
+  const detail = (body as Record<string, unknown>).detail;
+  if (!Array.isArray(detail)) return undefined;
+  const errors: Record<string, string> = {};
+  for (const item of detail) {
+    if (!item || typeof item !== "object") continue;
+    const { loc, msg } = item as { loc?: unknown; msg?: unknown };
+    const field = Array.isArray(loc) ? loc.find((part) => typeof part === "string" && part !== "body") : undefined;
+    if (typeof field === "string" && typeof msg === "string" && !errors[field]) errors[field] = msg;
+  }
+  return Object.keys(errors).length ? errors : undefined;
+}
+
 function extractMessage(body: unknown, status: number): string {
   if (body && typeof body === "object") {
     const record = body as Record<string, unknown>;
     if (typeof record.message === "string" && record.message) return record.message;
     if (typeof record.detail === "string" && record.detail) return record.detail;
+    if (Array.isArray(record.detail)) {
+      const first = extractFieldErrors(body);
+      if (first) return Object.values(first)[0];
+    }
   }
   return `Request failed with status ${status}.`;
 }
@@ -103,7 +122,11 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     parsed !== null && typeof parsed === "object" && (parsed as Record<string, unknown>).status === "error";
 
   if (!response.ok || isErrorBody) {
-    throw new ApiError(extractMessage(parsed, response.status), response.status);
+    const field =
+      parsed && typeof parsed === "object" && typeof (parsed as Record<string, unknown>).field === "string"
+        ? ((parsed as Record<string, unknown>).field as string)
+        : undefined;
+    throw new ApiError(extractMessage(parsed, response.status), response.status, field, extractFieldErrors(parsed));
   }
 
   return parsed as T;
@@ -149,6 +172,13 @@ const httpApi = {
       timeoutMs: 60000,
     });
   },
+  getLeaderboard: async () => {
+    const entries = await request<Array<Omit<LeaderboardEntry, "score"> & { score: number | string }>>(
+      endpoints.leaderboard,
+      { scope: "none" },
+    );
+    return entries.map((entry) => ({ ...entry, score: Number(entry.score) }));
+  },
 };
 
 const mockApi: typeof httpApi = {
@@ -156,10 +186,11 @@ const mockApi: typeof httpApi = {
   getStatus: () => runMock("team", () => mockBackend.getStatus(session.getToken())),
   getDownload: () => runMock("team", () => mockBackend.getDownload(session.getToken())),
   upload: (file, round) => runMock("team", () => mockBackend.upload(session.getToken(), file, round)),
+  getLeaderboard: () => runMock("none", () => []),
 };
 
 type RawAdminStatus = Omit<AdminStatus, "current_round"> & { current_round: RoundCode | null };
-type RawLeaderboardEntry = Omit<AdminLeaderboardEntry, "score"> & { score: number | string };
+type RawLeaderboardEntry = Omit<AdminLeaderboardEntry, "score" | "private_score"> & { score: number | string; private_score?: number | string | null };
 
 async function getAdminStatus(): Promise<AdminStatus> {
   return checkAdminStatus(await request<RawAdminStatus>(adminEndpoints.status, { scope: "admin" }));
@@ -194,7 +225,11 @@ const httpAdminApi = {
       `${adminEndpoints.leaderboard}?round=${encodeURIComponent(round)}`,
       { scope: "admin" },
     );
-    return entries.map((entry): AdminLeaderboardEntry => ({ ...entry, score: Number(entry.score) }));
+    return entries.map((entry): AdminLeaderboardEntry => ({
+      ...entry,
+      score: Number(entry.score),
+      private_score: entry.private_score != null ? Number(entry.private_score) : null,
+    }));
   },
   publishSnapshot: () => request<SnapshotResult>(adminEndpoints.snapshot, { method: "POST", scope: "admin" }),
   runFinalBacktest: () =>

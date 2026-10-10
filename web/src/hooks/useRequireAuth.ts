@@ -7,7 +7,7 @@ export function useRequireAuth() {
   const { hydrated, token, team } = useSession();
 
   useEffect(() => {
-    if (hydrated && !token) router.replace("/");
+    if (hydrated && !token) router.replace("/login");
   }, [hydrated, token, router]);
 
   return { ready: hydrated && Boolean(token), team: team ?? "" };

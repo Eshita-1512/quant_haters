@@ -61,11 +61,21 @@ function Stat({ label, value, tone = "text-text" }: { label: string; value: stri
   );
 }
 
+const SAMPLE_CSV = [
+  "timestamp,signal",
+  ...Array.from({ length: 50 }, (_, i) => {
+    const val = (Math.sin(i / 3.5) * 0.75 + Math.cos(i / 2) * 0.25).toFixed(2);
+    return `${i + 1},${val}`;
+  }),
+].join("\n");
+
 export default function PositionPreview({ file }: PositionPreviewProps) {
   const [result, setResult] = useState<{ file: File; parsed: Parsed } | null>(null);
+  const [showDemo, setShowDemo] = useState(false);
 
   useEffect(() => {
     if (!file) return;
+    setShowDemo(false);
     let cancelled = false;
     file
       .text()
@@ -80,46 +90,67 @@ export default function PositionPreview({ file }: PositionPreviewProps) {
     };
   }, [file]);
 
-  const parsed = file && result?.file === file ? result.parsed : null;
+  const parsed = file && result?.file === file ? result.parsed : showDemo ? parsePositions(SAMPLE_CSV) : null;
   const book = parsed && "positions" in parsed ? parsed : null;
   const error = parsed && "error" in parsed ? parsed.error : null;
+  const isDemo = !file && showDemo;
 
   return (
     <div className="flex h-full flex-col gap-4">
-      <div className="flex items-end justify-between gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">Book preview</p>
+          <div className="flex items-center gap-2">
+            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">Book preview</p>
+            {isDemo && (
+              <span className="rounded bg-alpha-soft px-1.5 py-0.5 font-mono text-[10px] text-alpha">Demo sample</span>
+            )}
+          </div>
           <p className="mt-1 text-sm text-muted">
             {book ? (
               <>
-                <span className="font-mono text-text">{file?.name}</span> / {book.positions.length} periods
+                <span className="font-mono text-text">{isDemo ? "sample_signals.csv" : file?.name}</span> /{" "}
+                {book.positions.length} periods
               </>
             ) : (
-              "Select a signal CSV to see your book before you submit."
+              "Choose a signals file in Upload dataset to preview your positions."
             )}
           </p>
         </div>
-        <div className="flex items-center gap-3 font-mono text-[11px] text-muted">
-          <span className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-sm bg-alpha-2" /> Long
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-sm bg-down" /> Short
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-sm bg-faint" /> Flat
-          </span>
+        <div className="flex items-center gap-3">
+          {!file && (
+            <button
+              type="button"
+              onClick={() => setShowDemo(!showDemo)}
+              className="font-mono text-xs text-alpha hover:underline"
+            >
+              {showDemo ? "Reset to empty" : "Try sample demo"}
+            </button>
+          )}
+          <div className="flex items-center gap-2.5 font-mono text-[11px] text-muted">
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-sm bg-alpha-2" /> Long
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-sm bg-down" /> Short
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-sm bg-faint" /> Flat
+            </span>
+          </div>
         </div>
       </div>
 
       <div className="relative h-56 rounded-xl border border-line bg-bg/60 p-3 text-alpha sm:h-64">
         <span className="absolute left-3 top-2 font-mono text-[10px] text-faint">+1 long</span>
         <span className="absolute bottom-2 left-3 font-mono text-[10px] text-faint">-1 short</span>
-        {book ? <Bars key={file?.name} positions={book.positions} /> : <Bars positions={GHOST} ghost />}
+        {book ? <Bars key={isDemo ? "demo" : file?.name} positions={book.positions} /> : <Bars positions={GHOST} ghost />}
         {!book && (
-          <div className="absolute inset-0 grid place-items-center">
-            <p className="rounded-full border border-line-strong bg-panel/90 px-4 py-1.5 text-sm text-muted">
-              {error ?? "No book loaded"}
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 p-4 text-center">
+            <p className="rounded-full border border-line-strong bg-panel/90 px-4 py-1.5 text-xs font-mono text-muted">
+              {error ?? "Awaiting Signal CSV"}
+            </p>
+            <p className="text-xs text-faint">
+              Choose a signals file in Upload dataset to preview live metrics
             </p>
           </div>
         )}
@@ -139,10 +170,14 @@ export default function PositionPreview({ file }: PositionPreviewProps) {
           tone={book && book.changes > 20 ? "text-warn" : "text-text"}
         />
       </dl>
-      {book && (
+      {book ? (
         <p className="text-xs text-muted">
           {book.changes} position changes above 0.05, each costing {COST_PER_CHANGE} in the Round 3 score.
           {book.problems.length > 0 && <span className="text-warn"> {book.problems.join(" ")}</span>}
+        </p>
+      ) : (
+        <p className="text-xs text-faint">
+          Metrics calculate automatically when you choose a signal CSV in the upload area.
         </p>
       )}
     </div>

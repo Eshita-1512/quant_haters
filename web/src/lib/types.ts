@@ -36,6 +36,8 @@ export interface EventStatus {
   assigned_stock: AssignedStock;
   download_available: boolean;
   submission_type: SubmissionType;
+  submissions_count?: number;
+  submissions_remaining?: number;
 }
 
 export interface DownloadResponse {
@@ -100,6 +102,13 @@ export interface FlashCrashRequest {
   duration_seconds?: number;
 }
 
+export interface LeaderboardEntry {
+  rank: number;
+  team: string;
+  score: number;
+  submissions: number;
+}
+
 export interface AdminLeaderboardEntry {
   rank: number;
   team: string;
@@ -107,6 +116,7 @@ export interface AdminLeaderboardEntry {
   score: number;
   submissions: number;
   last_submission_at: string | null;
+  private_score?: number | null;
 }
 
 export interface SnapshotResult {

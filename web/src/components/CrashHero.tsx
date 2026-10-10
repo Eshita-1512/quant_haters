@@ -1,15 +1,13 @@
-import DownloadButton from "@/components/DownloadButton";
 import TickerTape from "@/components/TickerTape";
 
 interface CrashHeroProps {
   message: string | null;
-  downloadAvailable: boolean;
 }
 
 const PLUNGE =
   "M0,60 L60,56 L120,64 L180,52 L240,58 L300,50 L360,62 L400,70 L430,150 L455,120 L480,210 L510,190 L540,250 L580,236 L620,262 L680,248 L740,270 L800,258 L860,276 L920,266 L1000,280";
 
-export default function CrashHero({ message, downloadAvailable }: CrashHeroProps) {
+export default function CrashHero({ message }: CrashHeroProps) {
   return (
     <section className="rise-in relative overflow-hidden rounded-xl border border-down/50 bg-panel">
       <svg
@@ -27,7 +25,7 @@ export default function CrashHero({ message, downloadAvailable }: CrashHeroProps
         <path d={`${PLUNGE} L1000,300 L0,300 Z`} fill="url(#crash-hero-fill)" />
         <path d={PLUNGE} fill="none" stroke="currentColor" strokeWidth="3" vectorEffect="non-scaling-stroke" />
       </svg>
-      <div className="relative grid gap-6 p-6 sm:p-8 md:grid-cols-[1.5fr_1fr] md:items-end">
+      <div className="relative grid gap-6 p-6 sm:p-8">
         <div>
           <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-down">
             <span className="siren h-2 w-2 rounded-full bg-down" />
@@ -37,9 +35,6 @@ export default function CrashHero({ message, downloadAvailable }: CrashHeroProps
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-text/85 sm:text-base">
             {message || "The regime has shifted. Retrain on the crash data before you submit."}
           </p>
-        </div>
-        <div className="flex flex-col gap-2 md:items-stretch">
-          <DownloadButton label="Download crash data" variant="danger" disabled={!downloadAvailable} />
         </div>
       </div>
       <div className="relative text-down">

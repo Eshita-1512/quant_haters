@@ -22,13 +22,18 @@ const rankTone: Record<number, string> = {
   3: "text-[#d99058]",
 };
 
-function rankEntries(entries: AdminLeaderboardEntry[]): RankedEntry[] {
-  const sorted = [...entries].sort((a, b) => b.score - a.score || a.team.localeCompare(b.team));
+function rankEntries(entries: AdminLeaderboardEntry[], sortKey: "score" | "private_score"): RankedEntry[] {
+  const sorted = [...entries].sort((a, b) => {
+    const valA = sortKey === "private_score" && a.private_score != null ? a.private_score : a.score;
+    const valB = sortKey === "private_score" && b.private_score != null ? b.private_score : b.score;
+    return valB - valA || a.team.localeCompare(b.team);
+  });
   let rank = 0;
   let previous: number | null = null;
   return sorted.map((entry) => {
-    if (previous === null || entry.score !== previous) rank += 1;
-    previous = entry.score;
+    const currentVal = sortKey === "private_score" && entry.private_score != null ? entry.private_score : entry.score;
+    if (previous === null || currentVal !== previous) rank += 1;
+    previous = currentVal;
     return { ...entry, rank };
   });
 }
@@ -48,6 +53,7 @@ export default function AdminLeaderboard({ currentRound }: AdminLeaderboardProps
   const [error, setError] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
   const [query, setQuery] = useState("");
+  const [sortKey, setSortKey] = useState<"score" | "private_score">("score");
   const [fullscreen, setFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -80,12 +86,12 @@ export default function AdminLeaderboard({ currentRound }: AdminLeaderboardProps
   };
 
   const entries = data && data.round === round ? data.entries : null;
-  const ranked = useMemo(() => (entries ? rankEntries(entries) : []), [entries]);
+  const ranked = useMemo(() => (entries ? rankEntries(entries, sortKey) : []), [entries, sortKey]);
   const [min, max] = useMemo(() => {
     if (ranked.length === 0) return [0, 1];
-    const scores = ranked.map((entry) => entry.score);
+    const scores = ranked.map((entry) => sortKey === "private_score" && entry.private_score != null ? entry.private_score : entry.score);
     return [Math.min(...scores), Math.max(...scores)];
-  }, [ranked]);
+  }, [ranked, sortKey]);
   const needle = query.trim().toLowerCase();
   const filtered = needle
     ? ranked.filter((entry) => entry.team.toLowerCase().includes(needle) || entry.team_code.toLowerCase().includes(needle))
@@ -152,27 +158,37 @@ export default function AdminLeaderboard({ currentRound }: AdminLeaderboardProps
               </th>
               <th scope="col" className="px-2 py-3 text-right font-medium">Subs</th>
               <th scope="col" className="hidden px-2 py-3 text-right font-medium sm:table-cell">Last</th>
-              <th scope="col" className="w-28 px-4 py-3 text-right font-medium">Score</th>
+              <th scope="col" className="w-24 px-2 py-3 text-right font-medium">
+                <button onClick={() => setSortKey("score")} className={`transition-colors ${sortKey === "score" ? "text-text" : "hover:text-text"}`}>
+                  Public {sortKey === "score" && "↓"}
+                </button>
+              </th>
+              <th scope="col" className="w-24 px-4 py-3 text-right font-medium">
+                <button onClick={() => setSortKey("private_score")} className={`transition-colors ${sortKey === "private_score" ? "text-text" : "hover:text-text"}`}>
+                  Private {sortKey === "private_score" && "↓"}
+                </button>
+              </th>
             </tr>
           </thead>
           <tbody>
             {entries === null &&
               Array.from({ length: 6 }).map((_, index) => (
                 <tr key={index} className="border-b border-line last:border-0">
-                  <td colSpan={7} className="px-4 py-3">
+                  <td colSpan={8} className="px-4 py-3">
                     <div className="h-5 animate-pulse rounded bg-panel-2" />
                   </td>
                 </tr>
               ))}
             {entries !== null && filtered.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-sm text-muted">
+                <td colSpan={8} className="px-4 py-10 text-center text-sm text-muted">
                   {ranked.length === 0 ? `No scored submissions for ${round} yet.` : "No teams match that search."}
                 </td>
               </tr>
             )}
             {filtered.map((entry) => {
-              const width = max === min ? 100 : 8 + ((entry.score - min) / (max - min)) * 92;
+              const currentScore = sortKey === "private_score" && entry.private_score != null ? entry.private_score : entry.score;
+              const width = max === min ? 100 : 8 + ((currentScore - min) / (max - min)) * 92;
               return (
                 <tr key={entry.team_code} className="border-b border-line transition-colors last:border-0 hover:bg-panel-2">
                   <td className={`tabular px-4 py-2.5 font-mono font-semibold ${rankTone[entry.rank] ?? "text-muted"}`}>
@@ -183,7 +199,7 @@ export default function AdminLeaderboard({ currentRound }: AdminLeaderboardProps
                   <td className="hidden px-2 py-2.5 md:table-cell">
                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-line">
                       <div
-                        className={`h-full rounded-full ${entry.score < 0 ? "bg-down" : entry.rank <= 3 ? "bg-up" : "bg-up/50"}`}
+                        className={`h-full rounded-full ${currentScore < 0 ? "bg-down" : entry.rank <= 3 ? "bg-up" : "bg-up/50"}`}
                         style={{ width: `${width}%` }}
                       />
                     </div>
@@ -193,11 +209,18 @@ export default function AdminLeaderboard({ currentRound }: AdminLeaderboardProps
                     {timeAgo(entry.last_submission_at)}
                   </td>
                   <td
-                    className={`tabular px-4 py-2.5 text-right font-mono font-semibold ${
+                    className={`tabular px-2 py-2.5 text-right font-mono font-semibold ${
                       entry.score < 0 ? "text-down" : "text-text"
                     }`}
                   >
                     {formatScore(entry.score)}
+                  </td>
+                  <td
+                    className={`tabular px-4 py-2.5 text-right font-mono font-semibold ${
+                      entry.private_score != null && entry.private_score < 0 ? "text-down" : "text-text"
+                    }`}
+                  >
+                    {entry.private_score != null ? formatScore(entry.private_score) : "-"}
                   </td>
                 </tr>
               );

@@ -9,8 +9,6 @@ interface FileUploadProps {
   disabledReason: string | null;
   onSubmitted?: (result: UploadSuccess, filename: string) => void;
   onFileChange?: (file: File | null) => void;
-  submitLabel?: string;
-  variant?: "default" | "alpha";
 }
 
 type UploadState =
@@ -33,8 +31,6 @@ export default function FileUpload({
   disabledReason,
   onSubmitted,
   onFileChange,
-  submitLabel = "Submit predictions",
-  variant = "default",
 }: FileUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -138,11 +134,7 @@ export default function FileUpload({
           type="button"
           onClick={submit}
           disabled={!file || disabled || uploading}
-          className={`inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-lg px-5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:bg-none disabled:bg-line-strong disabled:text-faint ${
-            variant === "alpha"
-              ? "bg-gradient-to-r from-alpha to-alpha-2 text-[#07061a] hover:brightness-110"
-              : "bg-up text-bg hover:bg-up/90"
-          }`}
+          className={`inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-lg px-5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:bg-line-strong disabled:text-faint bg-up text-bg hover:bg-up/90`}
         >
           {uploading ? (
             <>
@@ -150,7 +142,7 @@ export default function FileUpload({
               Uploading...
             </>
           ) : (
-            submitLabel
+            <>Submit file</>
           )}
         </button>
         {file && !uploading && (

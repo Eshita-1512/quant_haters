@@ -292,7 +292,7 @@ export default function AdminPage() {
   return (
     <>
       <Head>
-        <title>Control room | Quant ML Trading Challenge</title>
+        <title>Control room | BigShort</title>
         <meta name="robots" content="noindex" />
       </Head>
       {!hydrated ? null : token ? <AdminConsole user={user ?? "admin"} /> : <AdminLogin />}

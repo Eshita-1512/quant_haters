@@ -21,4 +21,6 @@ class EventStatus(BaseModel):
     assigned_stock: StatusStock
     download_available: bool
     submission_type: str
+    submissions_count: int = 0
+    submissions_remaining: int = 10
 

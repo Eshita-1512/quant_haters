@@ -75,7 +75,7 @@ export default function RoundControls({ status, busy, run }: RoundControlsProps)
                 onClick={() => setPending(round)}
                 className="h-8 rounded-md border border-line-strong px-3 text-xs font-medium transition-colors hover:border-text disabled:opacity-40"
               >
-                {current ? "Restart" : round.code === "R2" ? "Start + crash" : "Start"}
+                {current && round.phase !== "scheduled" ? "Restart" : round.code === "R2" ? "Start + crash" : "Start"}
               </button>
             </div>
           </div>

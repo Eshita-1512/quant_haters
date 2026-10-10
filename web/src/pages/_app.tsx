@@ -14,7 +14,7 @@ export default function App({ Component, pageProps }: AppProps) {
 
   useEffect(() => {
     const onUnauthorized = () => {
-      if (router.pathname === "/dashboard") router.replace("/?expired=1");
+      if (router.pathname === "/dashboard") router.replace("/login?expired=1");
     };
     window.addEventListener(UNAUTHORIZED_EVENT, onUnauthorized);
     return () => window.removeEventListener(UNAUTHORIZED_EVENT, onUnauthorized);
@@ -23,7 +23,7 @@ export default function App({ Component, pageProps }: AppProps) {
   return (
     <>
       <Head>
-        <title>Quant ML Trading Challenge</title>
+        <title>BigShort</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
       <div className={`${geistSans.variable} ${geistMono.variable} min-h-screen font-sans`}>

@@ -1,142 +1,152 @@
 import Head from "next/head";
-import { useRouter } from "next/router";
-import { useEffect, useState, type FormEvent } from "react";
-import { api } from "@/lib/api";
-import { config } from "@/lib/config";
-import { session, useSession } from "@/lib/session";
+import Link from "next/link";
+import type { ReactNode } from "react";
+import FormatHint from "@/components/FormatHint";
+import FieldGuide from "@/components/landing/FieldGuide";
+import Timeline from "@/components/landing/Timeline";
 
-const schedule = [
-  { code: "R1", name: "Foundation", detail: "Predict UP or DOWN on calm data" },
-  { code: "!!", name: "Flash Crash", detail: "New regime data drops mid event" },
-  { code: "R2", name: "Signal Hunt", detail: "Adapt your model to the crash" },
-  { code: "R3", name: "Alpha", detail: "Size positions from -1 to +1" },
+const RULES = [
+  "Up to 10 uploads per round.",
+  "One upload per 60 seconds per team. A rejected file also starts the wait.",
+  "Scores stay hidden until the organizers publish the leaderboard.",
+  "One login per team, given to you by the organizers. Everyone on the team uses it.",
 ];
 
-export default function LoginPage() {
-  const router = useRouter();
-  const [teamId, setTeamId] = useState("");
-  const [password, setPassword] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+const buttonBase =
+  "inline-flex h-12 items-center justify-center rounded-lg px-6 text-sm font-semibold transition-colors max-sm:w-full";
 
-  const { token } = useSession();
+function Section({ eyebrow, intro, children }: { eyebrow: string; intro: string; children: ReactNode }) {
+  return (
+    <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
+      <p className="font-mono text-xs uppercase tracking-[0.3em] text-muted">{eyebrow}</p>
+      <p className="mt-3 max-w-2xl text-lg">{intro}</p>
+      <div className="mt-8">{children}</div>
+    </section>
+  );
+}
 
-  useEffect(() => {
-    if (token) router.replace("/dashboard");
-  }, [token, router]);
+function EntryButtons() {
+  return (
+    <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+      <Link href="/login" className={`${buttonBase} bg-text text-bg hover:bg-text/90`}>
+        Log in
+      </Link>
+    </div>
+  );
+}
 
-  const expired = router.query.expired === "1";
-
-  const onSubmit = async (event: FormEvent) => {
-    event.preventDefault();
-    const team = teamId.trim();
-    if (!team || !password) {
-      setError("Enter your team ID and password.");
-      return;
-    }
-    setSubmitting(true);
-    setError(null);
-    try {
-      const { token: issued } = await api.login({ team_id: team, password });
-      session.save(issued, team.toUpperCase());
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Sign in failed.");
-      setSubmitting(false);
-    }
-  };
-
+export default function LandingPage() {
   return (
     <>
       <Head>
-        <title>Sign in | Quant ML Trading Challenge</title>
+        <title>BigShort</title>
+        <meta
+          name="description"
+          content="A five-hour machine learning trading sprint. Build a model, survive the crash, then trade your own signal."
+        />
       </Head>
-      <main className="mx-auto grid min-h-screen max-w-6xl items-center gap-12 px-4 py-12 sm:px-6 lg:grid-cols-[1.1fr_1fr]">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="grid h-8 w-8 place-items-center rounded-md border border-line-strong bg-panel font-mono text-sm font-semibold text-up">
-              Q
-            </span>
-            <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted">Team portal</span>
+
+      <header className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
+        <span className="text-sm font-semibold tracking-tight">BIGSHORT</span>
+        <Link
+          href="/login"
+          className="inline-flex min-h-11 items-center px-2 text-sm text-muted transition-colors hover:text-text"
+        >
+          Log in
+        </Link>
+      </header>
+
+      <main>
+        <section className="relative mx-auto max-w-6xl overflow-hidden px-4 pb-16 pt-12 sm:px-6 sm:pt-20">
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 600 240"
+            preserveAspectRatio="none"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-56 w-full opacity-25"
+          >
+            <path
+              d="M0 70 L60 62 L120 74 L180 58 L240 66 L290 60 L330 190 L370 205 L420 198 L470 170 L520 150 L600 120"
+              fill="none"
+              stroke="var(--down)"
+              strokeWidth="2"
+              vectorEffect="non-scaling-stroke"
+            />
+          </svg>
+          <div className="relative">
+            <p className="font-mono text-xs uppercase tracking-[0.3em] text-muted">Machine learning trading sprint</p>
+            <h1 className="mt-4 text-6xl font-black leading-none tracking-tighter sm:text-8xl lg:text-9xl">BIGSHORT</h1>
+            <p className="mt-6 max-w-xl text-lg text-muted">
+              A five-hour machine learning trading sprint. Build a model, survive the crash, then trade your own
+              signal.
+            </p>
+            <div className="mt-8">
+              <EntryButtons />
+            </div>
           </div>
-          <h1 className="mt-6 text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl">
-            Quant ML
-            <br />
-            Trading Challenge
-          </h1>
-          <p className="mt-4 max-w-md text-muted">
-            Five hours. One synthetic market. Build a model, survive the crash, then turn your signal into a
-            strategy that holds up after costs.
-          </p>
-          <ol className="mt-10 grid max-w-md gap-px overflow-hidden rounded-xl border border-line bg-line">
-            {schedule.map((step) => (
-              <li key={step.code} className="flex items-center gap-4 bg-panel px-4 py-3">
-                <span
-                  className={`w-7 font-mono text-xs font-semibold ${step.code === "!!" ? "text-down" : "text-up"}`}
-                >
-                  {step.code}
-                </span>
-                <span className="text-sm font-medium">{step.name}</span>
-                <span className="ml-auto text-right text-xs text-muted">{step.detail}</span>
+        </section>
+
+        <div data-todo="event-details" />
+
+        <Section eyebrow="How the five hours play out" intro="Calm, then chaos, then a new game. Durations are approximate.">
+          <Timeline />
+        </Section>
+
+        <Section eyebrow="What you upload" intro="One CSV per upload. Every file has exactly 50 rows, with timestamps 1 to 50, each once.">
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="rounded-xl border border-line bg-panel p-5">
+              <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">Rounds 1 and 2: predictions</h3>
+              <div className="mt-3">
+                <FormatHint type="prediction" />
+              </div>
+            </div>
+            <div className="rounded-xl border border-line bg-panel p-5">
+              <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">Round 3: signals</h3>
+              <div className="mt-3">
+                <FormatHint type="signal" />
+              </div>
+            </div>
+          </div>
+        </Section>
+
+        <Section eyebrow="How you're scored" intro="Every round is scored out of 100.">
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="rounded-xl border border-line bg-panel p-5">
+              <h3 className="font-semibold tracking-tight">Rounds 1 and 2</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted">
+                Scored on how well your predictions beat a coin flip, using balanced accuracy and the Matthews
+                correlation coefficient. Guessing, or calling UP every time, scores about 0.
+              </p>
+            </div>
+            <div className="rounded-xl border border-line bg-panel p-5">
+              <h3 className="font-semibold tracking-tight">Round 3</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted">
+                Your positions are backtested with trading costs. Risk-adjusted returns are rewarded; deep drawdowns
+                and trading too often both cost you.
+              </p>
+            </div>
+          </div>
+        </Section>
+
+        <Section eyebrow="Rules that matter on the day" intro="Read these once, then forget them.">
+          <ul className="grid gap-3 sm:grid-cols-2">
+            {RULES.map((rule) => (
+              <li key={rule} className="rounded-xl border border-line bg-panel px-5 py-4 text-sm text-muted">
+                {rule}
               </li>
             ))}
-          </ol>
-        </div>
+          </ul>
+        </Section>
 
-        <div className="rounded-2xl border border-line bg-panel p-6 shadow-2xl sm:p-8">
-          <h2 className="text-lg font-semibold">Sign in</h2>
-          <p className="mt-1 text-sm text-muted">Use the credentials your organizers gave your team.</p>
+        <Section eyebrow="Field guide" intro="Terms you will hear a lot.">
+          <FieldGuide />
+        </Section>
 
-          {expired && !error && (
-            <p className="mt-5 rounded-lg border border-warn/40 bg-warn-soft px-3 py-2 text-sm text-warn">
-              Your session ended. Sign in again to continue.
-            </p>
-          )}
-
-          <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4" noValidate>
-            <label className="flex flex-col gap-1.5">
-              <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">Team ID</span>
-              <input
-                value={teamId}
-                onChange={(event) => setTeamId(event.target.value)}
-                autoComplete="username"
-                autoCapitalize="characters"
-                spellCheck={false}
-                autoFocus
-                className="h-11 rounded-lg border border-line-strong bg-bg px-3 font-mono text-sm outline-none transition-colors placeholder:text-faint focus:border-accent"
-                placeholder="A01"
-              />
-            </label>
-            <label className="flex flex-col gap-1.5">
-              <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">Password</span>
-              <input
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                autoComplete="current-password"
-                className="h-11 rounded-lg border border-line-strong bg-bg px-3 font-mono text-sm outline-none transition-colors focus:border-accent"
-              />
-            </label>
-
-            <div aria-live="polite" className="min-h-5">
-              {error && <p className="text-sm text-down">{error}</p>}
-            </div>
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-text text-sm font-semibold text-bg transition-colors hover:bg-text/90 disabled:cursor-wait disabled:bg-line-strong disabled:text-muted"
-            >
-              {submitting && <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />}
-              {submitting ? "Signing in..." : "Enter the market"}
-            </button>
-          </form>
-
-          {config.useMocks && (
-            <p className="mt-6 border-t border-line pt-4 font-mono text-xs text-faint">
-              Mock mode: any team ID, password &quot;demo&quot;. Organizers use /admin.
-            </p>
-          )}
-        </div>
+        <section className="border-t border-line">
+          <div className="mx-auto flex max-w-6xl flex-col items-start gap-6 px-4 py-14 sm:px-6">
+            <h2 className="text-3xl font-black tracking-tighter sm:text-5xl">Ready for the open?</h2>
+            <EntryButtons />
+          </div>
+        </section>
       </main>
     </>
   );

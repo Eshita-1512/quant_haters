@@ -122,7 +122,7 @@ def run_final_backtest(db: Session, admin_id: uuid.UUID) -> FinalBacktestResult:
                 candidate.predict_start,
             )
             scored.append(
-                (candidate.team_name, score_signals(signals, targets).score)
+                (candidate.team_name, score_signals(signals, targets).alpha_score)
             )
     except (ArithmeticError, KeyError, ValueError) as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc

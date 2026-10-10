@@ -1,10 +1,8 @@
-import { formatDuration } from "@/hooks/useCountdown";
 import { phaseLabels } from "@/lib/format";
 import type { EventStatus } from "@/lib/types";
 
 interface AlphaHeroProps {
   status: EventStatus;
-  seconds: number;
 }
 
 const RALLY =
@@ -12,12 +10,11 @@ const RALLY =
 
 const RULES = [
   { label: "Sharpe ratio", effect: "rewarded", tone: "text-alpha-2" },
-  { label: "Max drawdown", effect: "-0.10 x", tone: "text-down" },
-  { label: "Each position change", effect: "-0.001", tone: "text-down" },
+  { label: "Max drawdown", effect: "-2 x", tone: "text-down" },
+  { label: "Trading cost", effect: "0.001 per unit moved", tone: "text-down" },
 ];
 
-export default function AlphaHero({ status, seconds }: AlphaHeroProps) {
-  const tone = seconds === 0 ? "text-faint" : seconds <= 60 ? "text-down" : seconds <= 300 ? "text-warn" : "";
+export default function AlphaHero({ status }: AlphaHeroProps) {
   const live = status.round_phase === "live" || status.round_phase === "flash_crash";
 
   return (
@@ -43,7 +40,7 @@ export default function AlphaHero({ status, seconds }: AlphaHeroProps) {
         <path d={RALLY} fill="none" stroke="currentColor" strokeWidth="2.5" vectorEffect="non-scaling-stroke" />
       </svg>
 
-      <div className="relative grid gap-8 p-6 sm:p-8 lg:grid-cols-[1.3fr_1fr] lg:items-end">
+      <div className="relative grid gap-8 p-6 sm:p-8 ">
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-mono text-xs uppercase tracking-[0.3em] text-alpha">Round 3</span>
@@ -75,18 +72,6 @@ export default function AlphaHero({ status, seconds }: AlphaHeroProps) {
           </ul>
         </div>
 
-        <div className="rounded-xl border border-line-strong bg-bg/70 p-5 backdrop-blur lg:justify-self-end">
-          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">
-            {status.round_phase === "paused" ? "Paused with" : "Desk closes in"}
-          </p>
-          <p
-            role="timer"
-            aria-live="off"
-            className={`tabular font-mono text-5xl font-semibold leading-none tracking-tight sm:text-6xl ${tone}`}
-          >
-            {formatDuration(seconds)}
-          </p>
-        </div>
       </div>
     </section>
   );

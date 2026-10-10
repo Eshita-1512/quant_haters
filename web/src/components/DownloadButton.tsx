@@ -4,14 +4,13 @@ import { downloadTeamDataset } from "@/lib/download";
 interface DownloadButtonProps {
   label: string;
   disabled?: boolean;
-  variant?: "default" | "danger";
   onDownloaded?: (filename: string) => void;
   onAttempted?: () => void;
 }
 
 type State = { kind: "idle" } | { kind: "loading" } | { kind: "done"; filename: string } | { kind: "error"; message: string };
 
-export default function DownloadButton({ label, disabled, variant = "default", onDownloaded, onAttempted }: DownloadButtonProps) {
+export default function DownloadButton({ label, disabled, onDownloaded, onAttempted }: DownloadButtonProps) {
   const [state, setState] = useState<State>({ kind: "idle" });
 
   const handleClick = async () => {
@@ -27,10 +26,7 @@ export default function DownloadButton({ label, disabled, variant = "default", o
     }
   };
 
-  const base =
-    variant === "danger"
-      ? "bg-down text-white hover:bg-down/90 disabled:bg-down/40"
-      : "bg-text text-bg hover:bg-text/90 disabled:bg-line-strong disabled:text-faint";
+  const base = "bg-text text-bg hover:bg-text/90 disabled:bg-line-strong disabled:text-faint";
 
   return (
     <div className="flex flex-col gap-2">

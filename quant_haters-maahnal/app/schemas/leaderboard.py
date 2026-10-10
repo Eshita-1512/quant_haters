@@ -14,6 +14,7 @@ class LeaderboardEntry(BaseModel):
 class AdminLeaderboardEntry(LeaderboardEntry):
     team_code: str
     last_submission_at: datetime | None
+    private_score: Decimal | None = None
 
 
 class SnapshotResult(BaseModel):
