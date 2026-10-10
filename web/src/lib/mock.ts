@@ -20,7 +20,7 @@ import type {
 } from "@/lib/types";
 
 export const MOCK_STATE_KEY = "qe.mock.state";
-const SCHEMA = 2;
+const SCHEMA = 5;
 const TEAM_PASSWORD = "demo";
 const ADMIN_USER = "admin";
 const ADMIN_PASSWORD = "admin";
@@ -89,7 +89,7 @@ function freshState(): MockState {
     schema: SCHEMA,
     version: 1,
     roundIndex: 0,
-    phase: "live",
+    phase: "scheduled",
     endsAt: Date.now() + ROUNDS[0].minutes * 60000,
     pausedRemainingMs: null,
     resumePhase: "live",

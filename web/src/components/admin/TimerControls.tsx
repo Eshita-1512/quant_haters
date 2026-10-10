@@ -26,10 +26,11 @@ export default function TimerControls({ status, seconds, busy, run }: TimerContr
   const [secs, setSecs] = useState("");
   const [confirmEnd, setConfirmEnd] = useState(false);
 
+  const scheduled = status.round_phase === "scheduled";
   const paused = status.round_phase === "paused";
-  const ended = status.round_phase === "completed" || (!paused && seconds === 0);
-  const state = paused ? "Paused" : ended ? "Time up" : "Running";
-  const stateTone = paused ? "text-warn" : ended ? "text-down" : "text-up";
+  const ended = status.round_phase === "completed" || (!paused && !scheduled && seconds === 0);
+  const state = scheduled ? "Scheduled" : paused ? "Paused" : ended ? "Time up" : "Running";
+  const stateTone = scheduled ? "text-muted" : paused ? "text-warn" : ended ? "text-down" : "text-up";
   const disabled = busy !== null;
 
   const setExact = async (event: FormEvent) => {
@@ -47,12 +48,14 @@ export default function TimerControls({ status, seconds, busy, run }: TimerContr
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-3">
         <div>
-          <p className={`font-mono text-[11px] uppercase tracking-[0.14em] ${stateTone}`}>{state}</p>
-          <p className="tabular font-mono text-5xl font-semibold leading-none tracking-tight">{formatDuration(seconds)}</p>
+          <p className={`font-mono text-[11px] uppercase tracking-[0.08em] ${stateTone}`}>{state}</p>
+          <p className="tabular font-mono text-5xl font-semibold leading-none tracking-tight">
+            {scheduled ? "--:--" : formatDuration(seconds)}
+          </p>
         </div>
         <button
           type="button"
-          disabled={disabled || (ended && !paused)}
+          disabled={disabled || scheduled || (ended && !paused)}
           onClick={() =>
             run(paused ? "Resumed timer" : "Paused timer", () => adminApi.timer({ action: paused ? "resume" : "pause" }))
           }
@@ -69,7 +72,7 @@ export default function TimerControls({ status, seconds, busy, run }: TimerContr
               <path d="M5 4h3.5v12H5zM11.5 4H15v12h-3.5z" />
             </svg>
           )}
-          {paused ? "Resume timer" : ended ? "Time is up" : "Pause timer"}
+          {paused ? "Resume timer" : scheduled ? "Timer not started" : ended ? "Time is up" : "Pause timer"}
         </button>
       </div>
 
@@ -80,7 +83,7 @@ export default function TimerControls({ status, seconds, busy, run }: TimerContr
             <button
               key={adjustment.label}
               type="button"
-              disabled={disabled}
+              disabled={disabled || scheduled}
               onClick={() =>
                 run(`Timer ${adjustment.label}`, () => adminApi.timer({ action: "extend", seconds: adjustment.seconds }))
               }
@@ -123,7 +126,7 @@ export default function TimerControls({ status, seconds, busy, run }: TimerContr
           </label>
           <button
             type="submit"
-            disabled={disabled || (!minutes && !secs)}
+            disabled={disabled || scheduled || (!minutes && !secs)}
             className="h-10 rounded-lg bg-text px-4 text-sm font-semibold text-bg transition-colors hover:bg-text/90 disabled:opacity-40"
           >
             Set
@@ -133,7 +136,7 @@ export default function TimerControls({ status, seconds, busy, run }: TimerContr
 
       <button
         type="button"
-        disabled={disabled || ended}
+        disabled={disabled || scheduled || ended}
         onClick={() => setConfirmEnd(true)}
         className="h-10 rounded-lg border border-down/40 text-sm text-down transition-colors hover:bg-down-soft disabled:opacity-40"
       >

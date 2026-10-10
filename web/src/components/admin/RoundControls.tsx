@@ -75,7 +75,7 @@ export default function RoundControls({ status, busy, run }: RoundControlsProps)
                 onClick={() => setPending(round)}
                 className="h-8 rounded-md border border-line-strong px-3 text-xs font-medium transition-colors hover:border-text disabled:opacity-40"
               >
-                {current ? "Restart" : round.code === "R2" ? "Start + crash" : "Start"}
+                {current && round.phase !== "scheduled" ? "Restart" : round.code === "R2" ? "Start + crash" : "Start"}
               </button>
             </div>
           </div>
@@ -98,6 +98,21 @@ export default function RoundControls({ status, busy, run }: RoundControlsProps)
           {pending.code === "R1" && status.flash_crash_active && " This also turns the flash crash off."}
         </ConfirmDialog>
       )}
+      
+      <div className="mt-4 border-t border-line pt-4">
+        <button
+          type="button"
+          disabled={busy !== null}
+          onClick={() => {
+            if (confirm("Are you sure you want to reset the entire event state back to Round 1 (Scheduled)? This does not delete teams or submissions, but restarts the event clock.")) {
+              run("Reset Event State", () => adminApi.resetEvent());
+            }
+          }}
+          className="rounded-md border border-warn px-3 py-1.5 text-xs text-warn transition-colors hover:bg-warn-soft disabled:opacity-40"
+        >
+          Reset Event State
+        </button>
+      </div>
     </div>
   );
 }

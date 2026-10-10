@@ -52,11 +52,29 @@ function tokenFor(scope: Scope): string | null {
   return null;
 }
 
+function extractFieldErrors(body: unknown): Record<string, string> | undefined {
+  if (!body || typeof body !== "object") return undefined;
+  const detail = (body as Record<string, unknown>).detail;
+  if (!Array.isArray(detail)) return undefined;
+  const errors: Record<string, string> = {};
+  for (const item of detail) {
+    if (!item || typeof item !== "object") continue;
+    const { loc, msg } = item as { loc?: unknown; msg?: unknown };
+    const field = Array.isArray(loc) ? loc.find((part) => typeof part === "string" && part !== "body") : undefined;
+    if (typeof field === "string" && typeof msg === "string" && !errors[field]) errors[field] = msg;
+  }
+  return Object.keys(errors).length ? errors : undefined;
+}
+
 function extractMessage(body: unknown, status: number): string {
   if (body && typeof body === "object") {
     const record = body as Record<string, unknown>;
     if (typeof record.message === "string" && record.message) return record.message;
     if (typeof record.detail === "string" && record.detail) return record.detail;
+    if (Array.isArray(record.detail)) {
+      const first = extractFieldErrors(body);
+      if (first) return Object.values(first)[0];
+    }
   }
   return `Request failed with status ${status}.`;
 }
@@ -104,7 +122,11 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     parsed !== null && typeof parsed === "object" && (parsed as Record<string, unknown>).status === "error";
 
   if (!response.ok || isErrorBody) {
-    throw new ApiError(extractMessage(parsed, response.status), response.status);
+    const field =
+      parsed && typeof parsed === "object" && typeof (parsed as Record<string, unknown>).field === "string"
+        ? ((parsed as Record<string, unknown>).field as string)
+        : undefined;
+    throw new ApiError(extractMessage(parsed, response.status), response.status, field, extractFieldErrors(parsed));
   }
 
   return parsed as T;
@@ -212,6 +234,8 @@ const httpAdminApi = {
   publishSnapshot: () => request<SnapshotResult>(adminEndpoints.snapshot, { method: "POST", scope: "admin" }),
   runFinalBacktest: () =>
     request<FinalBacktestResult>(adminEndpoints.finalBacktest, { method: "POST", scope: "admin", timeoutMs: 60000 }),
+  resetEvent: () =>
+    request<AdminStatus>(adminEndpoints.reset, { method: "POST", scope: "admin" }),
 };
 
 const mockAdminApi: typeof httpAdminApi = {
@@ -223,6 +247,7 @@ const mockAdminApi: typeof httpAdminApi = {
   getLeaderboard: (round) => runMock("admin", () => mockAdminBackend.getLeaderboard(adminSession.getToken(), round)),
   publishSnapshot: () => runMock("admin", () => mockAdminBackend.publishSnapshot(adminSession.getToken())),
   runFinalBacktest: () => runMock("admin", () => mockAdminBackend.runFinalBacktest(adminSession.getToken())),
+  resetEvent: () => runMock("admin", () => mockAdminBackend.getStatus(adminSession.getToken())),
 };
 
 export const api = config.useMocks ? mockApi : httpApi;

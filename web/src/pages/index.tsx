@@ -1,15 +1,16 @@
 import Head from "next/head";
+import Link from "next/link";
 import { useRouter } from "next/router";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
+import { session, useSession } from "@/lib/session";
 import { api } from "@/lib/api";
 import { config } from "@/lib/config";
-import { session, useSession } from "@/lib/session";
 
 const schedule = [
-  { code: "R1", name: "Foundation", detail: "Predict UP or DOWN on calm data" },
-  { code: "!!", name: "Flash Crash", detail: "New regime data drops mid event" },
-  { code: "R2", name: "Signal Hunt", detail: "Adapt your model to the crash" },
-  { code: "R3", name: "Alpha", detail: "Size positions from -1 to +1" },
+  { code: "!!", name: "R1 Scheduled", detail: "Market frozen" },
+  { code: "R1", name: "Predictions", detail: "Active" },
+  { code: "R2", name: "Predictions", detail: "Pending" },
+  { code: "R3", name: "Signals", detail: "Pending" },
 ];
 
 export default function LoginPage() {
@@ -110,8 +111,6 @@ export default function LoginPage() {
       </main>
     );
   }
-
-
 
   return (
     <>

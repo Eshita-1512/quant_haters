@@ -64,8 +64,8 @@ const STAGES: Record<OverlayStage, StageConfig> = {
     ticker: "recovery",
     tone: "cool",
     header: "Exchange notice / volatility cooling",
-    accent: "text-[#ff8f9b]",
-    dot: "bg-[#ff8f9b]",
+    accent: "text-recover",
+    dot: "bg-recover",
     backdrop: "bg-[#12040a]",
     vignette: "bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(255,120,140,0.12)_100%)]",
     entrance: "",
@@ -97,14 +97,14 @@ const REVEAL_DELAY_MS = 2600;
 function Title({ stage }: { stage: OverlayStage }) {
   if (stage === "warning") {
     return (
-      <h1 id="market-event-title" className="rise-in text-5xl font-black leading-none tracking-tight text-warn sm:text-7xl">
+      <h1 id="market-event-title" className="rise-in text-5xl font-display font-black uppercase leading-none tracking-tight text-warn sm:text-7xl">
         MARKET UNSTABLE
       </h1>
     );
   }
   if (stage === "crash") {
     return (
-      <h1 id="market-event-title" className="slam-in glitch text-6xl font-black leading-none tracking-tight text-down sm:text-8xl">
+      <h1 id="market-event-title" className="slam-in glitch text-6xl font-display font-black uppercase leading-none tracking-tight text-down sm:text-8xl">
         FLASH CRASH
       </h1>
     );
@@ -113,7 +113,7 @@ function Title({ stage }: { stage: OverlayStage }) {
     return (
       <h1
         id="market-event-title"
-        className="rise-in text-5xl font-black leading-none tracking-tight text-[#ff8f9b] sm:text-7xl"
+        className="rise-in text-5xl font-display font-black uppercase leading-none tracking-tight text-recover sm:text-7xl"
       >
         MARKET STABILIZING
       </h1>
@@ -124,7 +124,7 @@ function Title({ stage }: { stage: OverlayStage }) {
       <span className="block font-mono text-sm font-semibold uppercase tracking-[0.4em] text-alpha sm:text-base">
         Round 3
       </span>
-      <span className="text-alpha-gradient mt-2 block text-7xl font-black tracking-tight sm:text-9xl">ALPHA</span>
+      <span className="text-alpha mt-2 block text-7xl font-display font-black uppercase tracking-tight sm:text-9xl">ALPHA</span>
     </h1>
   );
 }
@@ -181,7 +181,7 @@ export default function MarketEventOverlay({ stage, stockCode, message, roundNam
       {config.burst && <div key={`burst-${stage}`} className={`flash-burst pointer-events-none fixed inset-0 z-10 ${config.burst}`} />}
 
       <div key={stage} className={`relative flex min-h-full flex-col ${config.entrance}`}>
-        <div className={`flex items-center justify-between gap-4 px-5 py-4 font-mono text-xs uppercase tracking-[0.2em] ${config.accent}`}>
+        <div className={`flex items-center justify-between gap-4 px-5 py-4 font-mono text-xs uppercase tracking-[0.12em] ${config.accent}`}>
           <span className="flex items-center gap-2">
             <span className={`siren h-2.5 w-2.5 rounded-full ${config.dot}`} />
             {config.header}
@@ -192,7 +192,7 @@ export default function MarketEventOverlay({ stage, stockCode, message, roundNam
           <TickerTape tone={config.tone} />
         </div>
 
-        <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col justify-center gap-8 px-5 py-10">
+        <div className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col justify-center gap-8 px-5 py-10">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <Title stage={stage} />
@@ -201,7 +201,7 @@ export default function MarketEventOverlay({ stage, stockCode, message, roundNam
               </p>
             </div>
             <div className="shrink-0 sm:text-right">
-              <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-text/60">{stockCode} last</div>
+              <div className="font-mono text-[11px] uppercase tracking-[0.12em] text-text/60">{stockCode} last</div>
               <div className={`tabular font-mono text-4xl font-bold sm:text-5xl ${config.accent}`}>{price.toFixed(2)}</div>
               <div className={`tabular font-mono text-xl font-semibold ${stage === "alpha" ? "text-alpha-2" : config.accent}`}>
                 {shownChange >= 0 ? "+" : ""}
@@ -210,7 +210,7 @@ export default function MarketEventOverlay({ stage, stockCode, message, roundNam
             </div>
           </div>
 
-          <div className={`relative h-56 overflow-hidden rounded-xl border border-current/30 bg-black/30 sm:h-72 ${config.accent}`}>
+          <div className={`relative h-56 overflow-hidden rounded-md border border-current/30 bg-black/30 sm:h-72 ${config.accent}`}>
             <MarketChart points={points} tone={config.tone} className="absolute inset-0 h-full w-full" />
             {config.badge && (
               <div className="absolute left-4 top-4 rounded border border-current/50 bg-black/60 px-2 py-1 font-mono text-[11px] uppercase tracking-wider">
@@ -229,18 +229,19 @@ export default function MarketEventOverlay({ stage, stockCode, message, roundNam
             {revealed && (
               <div className="rise-in flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="font-mono text-xs uppercase tracking-[0.2em] text-text/60">Now live</p>
+                  <p className="font-mono text-xs uppercase tracking-[0.12em] text-text/60">Now live</p>
                   <p className="text-2xl font-semibold">{roundName}</p>
                 </div>
                 <button
                   type="button"
                   onClick={onEnter}
-                  className={`inline-flex h-14 items-center justify-center gap-3 rounded-xl px-8 text-base font-bold uppercase tracking-wider transition-transform hover:scale-[1.02] active:scale-[0.98] ${
+                  className={`press inline-flex h-14 items-center justify-center gap-3 rounded-md px-8 font-display text-xl font-extrabold uppercase tracking-wide ${
                     stage === "alpha"
-                      ? "bg-gradient-to-r from-alpha to-alpha-2 text-[#07061a] shadow-[0_0_40px_rgba(155,140,255,0.45)]"
+                      ? "border-[1.5px] border-alpha bg-transparent text-[#d6cfff] hover:border-[#a98bff] hover:bg-[#a98bff]/15 hover:text-white hover:shadow-[0_0_0_3px_rgba(169,139,255,0.35)] focus-visible:border-[#a98bff] focus-visible:shadow-[0_0_0_3px_rgba(169,139,255,0.35)]"
                       : "crash-pulse bg-down text-white"
                   }`}
                 >
+                  {stage === "alpha" && <span aria-hidden className="live-dot h-2 w-2 rounded-full bg-alpha-2" />}
                   {config.cta}
                   <svg aria-hidden viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M4 10h12m0 0-4-4m4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />

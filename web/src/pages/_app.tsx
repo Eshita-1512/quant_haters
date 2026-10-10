@@ -3,18 +3,19 @@ import type { AppProps } from "next/app";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Big_Shoulders, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import { UNAUTHORIZED_EVENT } from "@/lib/api";
 
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+const display = Big_Shoulders({ variable: "--font-display-face", subsets: ["latin"] });
+const sans = IBM_Plex_Sans({ variable: "--font-sans-face", subsets: ["latin"] });
+const mono = IBM_Plex_Mono({ variable: "--font-mono-face", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
 
   useEffect(() => {
     const onUnauthorized = () => {
-      if (router.pathname === "/dashboard") router.replace("/?expired=1");
+      if (router.pathname === "/dashboard") router.replace("/login?expired=1");
     };
     window.addEventListener(UNAUTHORIZED_EVENT, onUnauthorized);
     return () => window.removeEventListener(UNAUTHORIZED_EVENT, onUnauthorized);
@@ -23,10 +24,10 @@ export default function App({ Component, pageProps }: AppProps) {
   return (
     <>
       <Head>
-        <title>Quant ML Trading Challenge</title>
+        <title>BigShort</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
-      <div className={`${geistSans.variable} ${geistMono.variable} min-h-screen font-sans`}>
+      <div className={`${display.variable} ${sans.variable} ${mono.variable} min-h-screen font-sans`}>
         <Component {...pageProps} />
       </div>
     </>

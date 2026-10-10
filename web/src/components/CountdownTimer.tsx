@@ -32,10 +32,10 @@ export default function CountdownTimer({ status, seconds }: CountdownTimerProps)
             {phaseLabels[status.round_phase]}
           </span>
         </div>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">{status.round_name}</h1>
+        <h1 className="mt-2 font-display text-4xl font-extrabold uppercase leading-none sm:text-5xl">{status.round_name}</h1>
       </div>
       <div className="sm:text-right">
-        <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">
+        <div className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted">
           {status.round_phase === "paused" ? "Paused with" : "Time remaining"}
         </div>
         <div

@@ -10,6 +10,7 @@ import FileUpload from "@/components/FileUpload";
 import FormatHint from "@/components/FormatHint";
 import MarketEventOverlay, { type OverlayStage } from "@/components/MarketEventOverlay";
 import Panel from "@/components/Panel";
+import WaitingRoom from "@/components/WaitingRoom";
 import { useCountdown } from "@/hooks/useCountdown";
 import { useEventStatus } from "@/hooks/useEventStatus";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
@@ -136,14 +137,29 @@ export default function DashboardPage() {
   const title =
     mode === "crash" ? "FLASH CRASH" : mode === "alpha" ? "Alpha desk" : "Dashboard";
 
+  const [waitingExit, setWaitingExit] = useState(false);
+  const wasScheduled = status?.current_round === "R1" && status?.round_phase === "scheduled";
+  
+  useEffect(() => {
+    if (status?.current_round === "R1" && status?.round_phase !== "scheduled" && !waitingExit) {
+      setWaitingExit(true);
+      const timer = setTimeout(() => {
+        setWaitingExit(false);
+      }, 3500); // 3.5 seconds burn time
+      return () => clearTimeout(timer);
+    }
+  }, [status?.current_round, status?.round_phase]);
+
+  const showWaitingRoom = wasScheduled || waitingExit;
+
   return (
     <>
       <Head>
-        <title>{`${title} | Quant ML Trading Challenge`}</title>
+        <title>{`${title} | BigShort`}</title>
       </Head>
       <AppHeader team={team} mode={mode} />
 
-      <main className="mx-auto flex max-w-6xl flex-col gap-5 px-4 py-6 sm:px-6 sm:py-8">
+      <main className="mx-auto flex max-w-[120rem] flex-col gap-5 px-6 md:px-10 xl:px-16 py-6 sm:py-8">
         {error && (
           <div role="status" className="rounded-lg border border-warn/40 bg-warn-soft px-4 py-2.5 text-sm text-warn">
             Connection problem: {error} {status ? "Showing the last known state." : "Retrying..."}
@@ -152,86 +168,24 @@ export default function DashboardPage() {
 
         {!status ? (
           <div className="grid gap-5">
-            <div className="h-36 animate-pulse rounded-xl border border-line bg-panel" />
+            <div className="h-36 animate-pulse rounded-md border border-line bg-panel" />
             <div className="grid gap-5 lg:grid-cols-3">
-              <div className="h-64 animate-pulse rounded-xl border border-line bg-panel" />
-              <div className="h-64 animate-pulse rounded-xl border border-line bg-panel lg:col-span-2" />
+              <div className="h-64 animate-pulse rounded-md border border-line bg-panel" />
+              <div className="h-64 animate-pulse rounded-md border border-line bg-panel lg:col-span-2" />
             </div>
           </div>
-        ) : mode === "alpha" ? (
-          <>
-            <AlphaHero status={status} seconds={seconds} />
-
-            <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr]">
-              <section className="rise-in rounded-2xl border border-line bg-panel p-5 sm:p-6">
-                <PositionPreview file={draft} />
-              </section>
-
-              <div className="flex flex-col gap-5">
-                <Panel title="Submit your book" className="border-alpha/25">
-                  <FileUpload
-                    key={status.current_round}
-                    round={status.current_round}
-                    disabledReason={uploadBlockReason(status, seconds, remainingThisRound)}
-                    onSubmitted={onSubmitted}
-                    onFileChange={setDraft}
-                    submitLabel="Submit signals"
-                    variant="alpha"
-                  />
-                </Panel>
-                <Panel title="Desk stats">
-                  <dl className="grid grid-cols-2 gap-4">
-                    <div>
-                      <dt className="text-xs text-muted">Books submitted</dt>
-                      <dd className="tabular mt-1 font-mono text-2xl font-semibold text-alpha-2">
-                        {submittedThisRound ?? "--"}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-xs text-muted">Submissions left</dt>
-                      <dd className="tabular mt-1 font-mono text-2xl font-semibold">{remainingThisRound ?? "--"}</dd>
-                    </div>
-                  </dl>
-                  <div className="mt-4 border-t border-line pt-4">
-                    <DownloadButton label="Download market data" disabled={!status.download_available} />
-                  </div>
-                </Panel>
-              </div>
-            </div>
-
-            <div className="grid gap-5 lg:grid-cols-[1fr_1.6fr]">
-              <Panel title="Required format">
-                <FormatHint type={status.submission_type} />
-              </Panel>
-              <Panel title="Trade log">
-                {roundHistory.length === 0 ? (
-                  <p className="text-sm text-faint">No books submitted from this browser yet.</p>
-                ) : (
-                  <ul className="divide-y divide-line">
-                    {roundHistory.map((item) => (
-                      <li key={item.id} className="flex items-center gap-3 py-2 font-mono text-xs">
-                        <span className="text-faint">#{item.submissionNumber}</span>
-                        <span className="text-faint">{item.at}</span>
-                        <span className="truncate text-text">{item.filename}</span>
-                        <span className="ml-auto font-semibold text-alpha-2">Received</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </Panel>
-            </div>
-          </>
+        ) : showWaitingRoom ? (
+          <WaitingRoom status={status} team={team} isStarting={waitingExit} />
         ) : (
           <>
-            {mode === "crash" && (
-              <CrashHero message={status.flash_crash_message} downloadAvailable={status.download_available} />
-            )}
+            {mode === "crash" && <CrashHero message={status.flash_crash_message} />}
+            {mode === "alpha" && <AlphaHero status={status} />}
 
-            <Panel className={mode === "crash" ? "border-down/30" : ""}>
+            <Panel className={mode === "crash" ? "border-down/30" : mode === "alpha" ? "border-alpha/25" : ""}>
               <CountdownTimer status={status} seconds={seconds} />
             </Panel>
 
-            <div className="grid gap-5 lg:grid-cols-3">
+            <div className="rise-in grid gap-5 lg:grid-cols-3">
               <div className="flex flex-col gap-5">
                 <Panel title="Assigned stock">
                   <p className={`font-mono text-3xl font-semibold tracking-tight ${mode === "crash" ? "text-down" : ""}`}>
@@ -240,15 +194,11 @@ export default function DashboardPage() {
                   <p className="mt-1 text-sm text-muted">{status.assigned_stock.name}</p>
                 </Panel>
 
-                {mode !== "crash" && (
-                  <Panel title="Dataset">
-                    <p className="mb-4 text-sm text-muted">Your team&apos;s training and prediction rows for this round.</p>
-                    <DownloadButton label="Download data" disabled={!status.download_available} />
-                    {!status.download_available && (
-                      <p className="text-xs text-muted">The dataset is not available yet.</p>
-                    )}
-                  </Panel>
-                )}
+                <Panel title="Upload submission">
+                  <p className="mb-4 text-sm text-muted">Your team&apos;s training and prediction rows for this round.</p>
+                  <DownloadButton label="Download dataset" disabled={!status.download_available} />
+                  {!status.download_available && <p className="text-xs text-muted">The dataset is not available yet.</p>}
+                </Panel>
 
                 <Panel title="This round">
                   <dl className="grid grid-cols-2 gap-4">
@@ -265,7 +215,7 @@ export default function DashboardPage() {
               </div>
 
               <Panel
-                title={status.submission_type === "signal" ? "Upload signals" : "Upload predictions"}
+                title="Upload submission"
                 aside={<span className="font-mono text-[11px] text-faint">{status.current_round}</span>}
                 className="lg:col-span-2"
               >
@@ -275,6 +225,7 @@ export default function DashboardPage() {
                     round={status.current_round}
                     disabledReason={uploadBlockReason(status, seconds, remainingThisRound)}
                     onSubmitted={onSubmitted}
+                    onFileChange={setDraft}
                   />
                   <div>
                     <h3 className="mb-3 text-sm font-medium">Required format</h3>
@@ -301,6 +252,12 @@ export default function DashboardPage() {
                 </div>
               </Panel>
             </div>
+
+            {status.submission_type === "signal" && (
+              <section className="rise-in rounded-lg border border-line bg-panel p-5 sm:p-6">
+                <PositionPreview file={draft} />
+              </section>
+            )}
           </>
         )}
       </main>

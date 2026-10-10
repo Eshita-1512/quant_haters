@@ -16,26 +16,24 @@ export default function AppHeader({ team, mode = "default" }: AppHeaderProps) {
 
   const signOut = () => {
     session.clear();
-    router.replace("/");
+    router.replace("/login");
   };
 
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-bg/85 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4 sm:px-6">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <span
-            className={`grid h-7 w-7 place-items-center rounded-md border border-line-strong bg-panel font-mono text-xs font-semibold ${
-              crash ? "text-down" : alpha ? "text-alpha" : "text-up"
-            }`}
-          >
-            Q
-          </span>
-          <span className="hidden text-sm font-semibold tracking-tight sm:inline">Quant ML Trading Challenge</span>
+      <div className="mx-auto flex h-14 max-w-[120rem] items-center gap-4 px-6 md:px-10 xl:px-16">
+        <Link
+          href="/dashboard"
+          className="flex min-h-11 items-center gap-[0.22em] font-display text-xl font-extrabold uppercase leading-none"
+          aria-label="BigShort dashboard"
+        >
+          <span>Big</span>
+          <span className={alpha ? "text-alpha" : "text-down"}>Short</span>
         </Link>
-        <nav className="flex items-center gap-3 ml-2 border-l border-line pl-3">
+        <nav className="ml-2 flex items-center gap-1 border-l border-line pl-2">
           <Link
             href="/dashboard"
-            className={`font-mono text-xs transition-colors ${
+            className={`inline-flex min-h-11 items-center px-2 font-mono text-xs transition-colors ${
               router.pathname === "/dashboard" ? "text-text font-semibold" : "text-muted hover:text-text"
             }`}
           >
@@ -43,7 +41,7 @@ export default function AppHeader({ team, mode = "default" }: AppHeaderProps) {
           </Link>
           <Link
             href="/leaderboard"
-            className={`font-mono text-xs transition-colors ${
+            className={`inline-flex min-h-11 items-center px-2 font-mono text-xs transition-colors ${
               router.pathname === "/leaderboard" ? "text-text font-semibold" : "text-muted hover:text-text"
             }`}
           >
