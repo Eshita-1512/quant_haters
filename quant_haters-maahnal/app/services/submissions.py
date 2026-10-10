@@ -93,11 +93,19 @@ def _validation_targets(
         all_data = _load_all_master_validation(str(path), tuple(sorted(required)))
         by_timestamp = all_data.get((team_code, stock_code), {})
         length = end - start + 1
-        values = [by_timestamp[start + offset][column] for offset in range(length)]
+        
+        sorted_keys = sorted(by_timestamp.keys())
+        start_idx = start - 801
+        keys_for_window = sorted_keys[start_idx : start_idx + length]
+        
+        if len(keys_for_window) != length:
+            raise KeyError(f"Missing targets for window {start}-{end}")
+            
+        values = [by_timestamp[k][column] for k in keys_for_window]
         return (
-            [Decimal(value) for value in values]
+            [Decimal(str(value)) for value in values]
             if round_number == 3
-            else [int(value) for value in values]
+            else [int(float(value)) for value in values]
         )
     except ValidationDataError:
         raise
