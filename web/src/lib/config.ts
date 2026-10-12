@@ -31,6 +31,7 @@ export const adminEndpoints = {
   leaderboard: "/api/v1/admin/leaderboard",
   snapshot: "/api/v1/admin/leaderboard/snapshot",
   finalBacktest: "/api/v1/admin/final-backtest",
+  reset: "/api/v1/admin/reset",
 };
 
 export const uploadFieldName = "file";
