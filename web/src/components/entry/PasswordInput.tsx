@@ -48,7 +48,7 @@ export default function PasswordInput({
           autoComplete={autoComplete}
           aria-invalid={invalid || undefined}
           aria-describedby={describedBy}
-          className="h-11 w-full rounded-lg border border-line-strong bg-bg pl-3 pr-16 font-mono text-sm outline-none transition-colors focus:border-accent aria-[invalid=true]:border-down"
+          className="h-11 w-full border-2 border-line-strong bg-bg pl-3 pr-16 font-mono text-sm outline-none transition-colors focus:border-accent aria-[invalid=true]:border-down"
         />
         <button
           type="button"

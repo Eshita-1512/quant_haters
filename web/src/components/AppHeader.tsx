@@ -27,8 +27,8 @@ export default function AppHeader({ team, mode = "default" }: AppHeaderProps) {
           className="flex min-h-11 items-center gap-[0.22em] font-display text-xl font-extrabold uppercase leading-none"
           aria-label="BigShort dashboard"
         >
-          <span>Big</span>
-          <span className={alpha ? "text-alpha" : "text-down"}>Short</span>
+          <span className="text-down">Big</span>
+          <span className="text-muted">Short</span>
         </Link>
         <nav className="ml-2 flex items-center gap-1 border-l border-line pl-2">
           <Link
@@ -49,14 +49,14 @@ export default function AppHeader({ team, mode = "default" }: AppHeaderProps) {
           </Link>
         </nav>
         {alpha && (
-          <span className="flex items-center gap-1.5 rounded-full border border-alpha/40 bg-alpha-soft px-2.5 py-0.5 font-mono text-[11px] uppercase tracking-wider text-alpha">
-            <span className="h-1.5 w-1.5 rounded-full bg-alpha-2" />
+          <span className="flex items-center gap-1.5 border border-alpha/40 bg-alpha-soft px-2.5 py-0.5 font-mono text-[11px] uppercase tracking-wider text-alpha">
+            <span className="h-1.5 w-1.5 round bg-alpha-2" />
             Alpha desk
           </span>
         )}
         {crash && (
-          <span className="flex items-center gap-1.5 rounded-full border border-down/50 bg-down-soft px-2.5 py-0.5 font-mono text-[11px] uppercase tracking-wider text-down">
-            <span className="siren h-1.5 w-1.5 rounded-full bg-down" />
+          <span className="flex items-center gap-1.5 border border-down/50 bg-down-soft px-2.5 py-0.5 font-mono text-[11px] uppercase tracking-wider text-down">
+            <span className="siren h-1.5 w-1.5 round bg-down" />
             Crash mode
           </span>
         )}
@@ -69,12 +69,22 @@ export default function AppHeader({ team, mode = "default" }: AppHeaderProps) {
           <button
             type="button"
             onClick={signOut}
-            className="rounded-md border border-line-strong px-3 py-1.5 text-sm text-muted transition-colors hover:border-down hover:text-down"
+            className="border border-line-strong px-3 py-1.5 text-sm text-muted transition-colors hover:border-down hover:text-down"
           >
             Sign out
           </button>
         </div>
       </div>
+      {crash && (
+        <div role="status" className="bg-down px-4 py-2 text-center font-mono text-xs font-semibold uppercase tracking-[0.12em] text-bg">
+          Flash crash in progress. This is part of the game.
+        </div>
+      )}
+      {alpha && (
+        <div role="status" className="bg-alpha px-4 py-2 text-center font-mono text-xs font-semibold uppercase tracking-[0.12em] text-bg">
+          Alpha mode
+        </div>
+      )}
     </header>
   );
 }

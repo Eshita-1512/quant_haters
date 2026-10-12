@@ -18,10 +18,10 @@ export default function AlphaHero({ status }: AlphaHeroProps) {
   const live = status.round_phase === "live" || status.round_phase === "flash_crash";
 
   return (
-    <section className="rise-in relative overflow-hidden rounded-lg border border-alpha/30 bg-panel">
-      <div className="pointer-events-none absolute -left-1/4 -top-1/2 h-[140%] w-[70%] rounded-full bg-alpha/20 blur-3xl drift-glow" />
+    <section className="rise-in relative overflow-hidden border border-alpha/30 bg-panel">
+      <div className="pointer-events-none absolute -left-1/4 -top-1/2 h-[140%] w-[70%] bg-alpha/20 blur-3xl drift-glow" />
       <div
-        className="pointer-events-none absolute -bottom-1/2 -right-1/4 h-[140%] w-[60%] rounded-full bg-alpha-2/10 blur-3xl drift-glow"
+        className="pointer-events-none absolute -bottom-1/2 -right-1/4 h-[140%] w-[60%] bg-alpha-2/10 blur-3xl drift-glow"
         style={{ animationDelay: "-7s" }}
       />
       <svg
@@ -45,11 +45,11 @@ export default function AlphaHero({ status }: AlphaHeroProps) {
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-mono text-xs uppercase tracking-[0.12em] text-alpha">Round 3</span>
             <span
-              className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono text-[11px] uppercase tracking-wider ${
+              className={`inline-flex items-center gap-1.5 border px-2 py-0.5 font-mono text-[11px] uppercase tracking-wider ${
                 live ? "border-alpha-2/40 bg-alpha-2/10 text-alpha-2" : "border-line-strong text-muted"
               }`}
             >
-              {live && <span className="h-1.5 w-1.5 rounded-full bg-current" />}
+              {live && <span className="h-1.5 w-1.5 round bg-current" />}
               {live ? "Desk open" : phaseLabels[status.round_phase]}
             </span>
           </div>
@@ -63,7 +63,7 @@ export default function AlphaHero({ status }: AlphaHeroProps) {
             {RULES.map((rule) => (
               <li
                 key={rule.label}
-                className="flex items-center gap-2 rounded-lg border border-line-strong bg-bg/60 px-3 py-1.5 text-xs backdrop-blur"
+                className="flex items-center gap-2 border border-line-strong bg-bg/60 px-3 py-1.5 text-xs backdrop-blur"
               >
                 <span className="text-muted">{rule.label}</span>
                 <span className={`font-mono font-semibold ${rule.tone}`}>{rule.effect}</span>

@@ -24,10 +24,10 @@ export default function CountdownTimer({ status, seconds }: CountdownTimerProps)
         <div className="flex items-center gap-2">
           <span className="font-mono text-xs text-muted">{status.current_round}</span>
           <span
-            className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono text-[11px] uppercase tracking-wider ${phaseStyles[status.round_phase]}`}
+            className={`inline-flex items-center gap-1.5 border px-2 py-0.5 font-mono text-[11px] uppercase tracking-wider ${phaseStyles[status.round_phase]}`}
           >
             {(status.round_phase === "live" || status.round_phase === "flash_crash") && (
-              <span className="h-1.5 w-1.5 rounded-full bg-current" />
+              <span className="h-1.5 w-1.5 round bg-current" />
             )}
             {phaseLabels[status.round_phase]}
           </span>

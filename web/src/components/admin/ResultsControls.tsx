@@ -49,7 +49,7 @@ export default function ResultsControls({ currentRound }: ResultsControlsProps) 
   return (
     <div className="flex flex-col gap-4">
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="flex flex-col gap-2 rounded-lg border border-line p-4">
+        <div className="flex flex-col gap-2 border border-line p-4">
           <p className="text-sm font-medium">Public leaderboard</p>
           <p className="text-xs text-muted">
             Freezes the current {currentRound} best scores into the public leaderboard. Participants never see live
@@ -59,12 +59,12 @@ export default function ResultsControls({ currentRound }: ResultsControlsProps) 
             type="button"
             disabled={busy}
             onClick={() => setPending("snapshot")}
-            className="mt-auto h-10 rounded-lg bg-text px-4 text-sm font-semibold text-bg transition-colors hover:bg-text/90 disabled:opacity-40"
+            className="mt-auto h-10 bg-text px-4 text-sm font-semibold text-bg transition-colors hover:bg-text/90 disabled:opacity-40"
           >
             {LABELS.snapshot}
           </button>
         </div>
-        <div className="flex flex-col gap-2 rounded-lg border border-line p-4">
+        <div className="flex flex-col gap-2 border border-line p-4">
           <p className="text-sm font-medium">Final R3 backtest</p>
           <p className="text-xs text-muted">
             Scores each team&apos;s best Round 3 book against the hidden market slice to rank the winners.
@@ -73,7 +73,7 @@ export default function ResultsControls({ currentRound }: ResultsControlsProps) 
             type="button"
             disabled={busy}
             onClick={() => setPending("backtest")}
-            className="mt-auto h-10 rounded-lg border border-alpha/50 px-4 text-sm font-semibold text-alpha transition-colors hover:bg-alpha-soft disabled:opacity-40"
+            className="mt-auto h-10 border border-alpha/50 px-4 text-sm font-semibold text-alpha transition-colors hover:bg-alpha-soft disabled:opacity-40"
           >
             {LABELS.backtest}
           </button>
@@ -81,7 +81,7 @@ export default function ResultsControls({ currentRound }: ResultsControlsProps) 
       </div>
 
       {error && (
-        <p role="alert" className="rounded-lg border border-down/50 bg-down-soft px-3 py-2 text-sm text-down">
+        <p role="alert" className="border border-down/50 bg-down-soft px-3 py-2 text-sm text-down">
           {error}
         </p>
       )}

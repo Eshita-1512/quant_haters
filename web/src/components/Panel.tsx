@@ -9,7 +9,7 @@ interface PanelProps {
 
 export default function Panel({ title, aside, className = "", children }: PanelProps) {
   return (
-    <section className={`rounded-md border border-line bg-panel ${className}`}>
+    <section className={`border border-line bg-panel ${className}`}>
       {(title || aside) && (
         <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3">
           {title && <h2 className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-muted">{title}</h2>}

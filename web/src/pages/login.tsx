@@ -60,11 +60,11 @@ export default function LoginPage() {
       <main className="mx-auto grid min-h-screen max-w-[120rem] items-center gap-12 px-6 md:px-10 xl:px-16 py-12 lg:grid-cols-[1.1fr_1fr]">
         <div>
           <h1 className="flex flex-wrap items-baseline gap-x-[0.22em] font-display text-7xl font-extrabold uppercase leading-[0.85] sm:text-8xl">
-            <span>Big</span>
-            <span className="text-down">Short</span>
+            <span className="text-down">Big</span>
+            <span className="text-muted">Short</span>
           </h1>
           <p className="mt-4 max-w-md text-muted">Log in with your team code and password.</p>
-          <ol className="mt-10 hidden max-w-md gap-px overflow-hidden rounded-md border border-line bg-line sm:grid">
+          <ol className="mt-10 hidden max-w-md gap-px overflow-hidden border border-line bg-text sm:grid">
             {schedule.map((step) => (
               <li key={step.code} className="flex items-center gap-4 bg-panel px-4 py-3">
                 <span
@@ -85,12 +85,12 @@ export default function LoginPage() {
           </Link>
         </div>
 
-        <div className="rise-in rounded-lg border border-line bg-panel p-6 sm:p-8">
+        <div className="rise-in border-2 border-text bg-panel p-6 sm:p-8">
           <h2 className="text-lg font-semibold">Log in</h2>
           <p className="mt-1 text-sm text-muted">Your organizers gave your team a team code and password. Everyone on your team uses the same login.</p>
 
           {expired && !error && (
-            <p className="mt-5 rounded-lg border border-warn/40 bg-warn-soft px-3 py-2 text-sm text-warn">
+            <p className="mt-5 border border-warn/40 bg-warn-soft px-3 py-2 text-sm text-warn">
               Your session ended. Log in again to continue.
             </p>
           )}
@@ -108,7 +108,7 @@ export default function LoginPage() {
                 autoCapitalize="characters"
                 spellCheck={false}
                 autoFocus
-                className="h-11 rounded-lg border border-line-strong bg-bg px-3 font-mono text-sm outline-none transition-colors placeholder:text-faint focus:border-accent"
+                className="h-11 border-2 border-line-strong bg-panel-2 px-3 font-mono text-sm outline-none transition-colors placeholder:text-faint focus:border-accent"
                 placeholder="C04"
               />
             </div>
@@ -136,9 +136,9 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="press inline-flex h-11 items-center justify-center gap-2 rounded-md bg-text text-sm font-semibold text-bg hover:bg-text/90 disabled:cursor-wait disabled:border disabled:border-line-strong disabled:bg-panel-2 disabled:text-muted"
+              className="btn-label w-full disabled:cursor-wait"
             >
-              {submitting && <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />}
+              {submitting && <span className="h-4 w-4 animate-spin round border-2 border-current border-t-transparent" />}
               {submitting ? "Logging in..." : "Enter the market"}
             </button>
           </form>

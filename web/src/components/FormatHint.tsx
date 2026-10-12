@@ -5,7 +5,7 @@ export default function FormatHint({ type }: { type: SubmissionType }) {
   const format = csvFormats[type];
   return (
     <div className="flex flex-col gap-3">
-      <pre className="overflow-x-auto rounded-lg border border-line bg-bg p-3 font-mono text-xs leading-relaxed">
+      <pre className="overflow-x-auto border border-line bg-bg p-3 font-mono text-xs leading-relaxed">
         <span className="text-accent">{format.header}</span>
         {"\n"}
         <span className="text-muted">{format.example.join("\n")}</span>

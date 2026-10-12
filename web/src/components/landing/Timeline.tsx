@@ -105,14 +105,22 @@ export default function Timeline() {
             <li key={stop.tag} className="relative pl-8 lg:pl-0 lg:pt-8" style={delay}>
               <span
                 aria-hidden="true"
-                className={`tl-dot absolute left-0 top-1 h-[11px] w-[11px] rounded-full ${tone.dot} lg:top-0`}
+                className={`tl-dot absolute left-0 top-1 h-[11px] w-[11px] round ${tone.dot} lg:top-0`}
               >
-                {stop.tone === "crash" && <span className="tl-ring absolute inset-0 rounded-full bg-down" />}
+                {stop.tone === "crash" && <span className="tl-ring round absolute inset-0 bg-down" />}
               </span>
               <div className="reveal-item">
-                <p className={`font-mono text-[11px] uppercase tracking-[0.08em] ${tone.tag}`}>
-                  {stop.tag}
-                  {stop.duration && <span className="text-faint"> · {stop.duration}</span>}
+                <p className="flex flex-wrap items-center gap-2">
+                  <span
+                    className={`inline-block border-2 border-text bg-text px-2 py-1 font-display text-base font-extrabold uppercase leading-none ${
+                      stop.tone === "crash" ? "text-down" : "text-bg"
+                    }`}
+                  >
+                    {stop.tag}
+                  </span>
+                  {stop.duration && (
+                    <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-faint">{stop.duration}</span>
+                  )}
                 </p>
                 <h3 className="mt-2 font-display text-3xl font-extrabold uppercase leading-none">{stop.title}</h3>
                 <p className="mt-3 text-sm leading-relaxed text-muted">{stop.body}</p>

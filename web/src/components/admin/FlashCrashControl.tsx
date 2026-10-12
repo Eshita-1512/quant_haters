@@ -36,7 +36,7 @@ export default function FlashCrashControl({ status, busy, run }: FlashCrashContr
   return (
     <div className="flex flex-col gap-5">
       <div
-        className={`flex items-center justify-between gap-4 rounded-md border p-4 transition-colors duration-500 ${
+        className={`flex items-center justify-between gap-4 border p-4 transition-colors duration-500 ${
           active ? "border-down/60 bg-down-soft" : "border-line-strong bg-panel-2"
         }`}
       >
@@ -78,12 +78,12 @@ export default function FlashCrashControl({ status, busy, run }: FlashCrashContr
               rows={3}
               maxLength={280}
               placeholder="The market has crashed. Download the crash data and adapt."
-              className="resize-none rounded-lg border border-line-strong bg-bg px-3 py-2 text-sm outline-none placeholder:text-faint focus:border-accent"
+              className="resize-none border border-line-strong bg-bg px-3 py-2 text-sm outline-none placeholder:text-faint focus:border-accent"
             />
           </label>
           <label className="flex items-center justify-between gap-3">
             <span className="text-xs text-muted">Round 2 duration</span>
-            <span className="flex items-center gap-1 rounded-md border border-line-strong bg-bg px-2 focus-within:border-accent">
+            <span className="flex items-center gap-1 border border-line-strong bg-bg px-2 focus-within:border-accent">
               <input
                 value={durationMinutes}
                 onChange={(event) => setMinutes(event.target.value.replace(/\D/g, "").slice(0, 3))}
@@ -102,7 +102,7 @@ export default function FlashCrashControl({ status, busy, run }: FlashCrashContr
       )}
 
       {active && status.flash_crash_message && (
-        <p className="rounded-lg border border-line bg-bg p-3 text-sm text-muted">{status.flash_crash_message}</p>
+        <p className="border border-line bg-bg p-3 text-sm text-muted">{status.flash_crash_message}</p>
       )}
 
       {confirm && (

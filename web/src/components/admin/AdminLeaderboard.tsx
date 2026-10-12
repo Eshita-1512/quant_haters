@@ -104,7 +104,7 @@ export default function AdminLeaderboard({ currentRound }: AdminLeaderboardProps
     >
       <div className="flex flex-wrap items-center gap-3">
         {fullscreen && <h2 className="mr-4 text-3xl font-semibold tracking-tight">Leaderboard</h2>}
-        <div role="tablist" aria-label="Round" className="flex rounded-lg border border-line-strong p-0.5">
+        <div role="tablist" aria-label="Round" className="flex border border-line-strong p-0.5">
           {ROUND_TABS.map((tab) => (
             <button
               key={tab}
@@ -112,12 +112,12 @@ export default function AdminLeaderboard({ currentRound }: AdminLeaderboardProps
               role="tab"
               aria-selected={tab === round}
               onClick={() => setPicked(tab === currentRound ? null : tab)}
-              className={`h-8 rounded-md px-3 font-mono text-xs transition-colors ${
+              className={`h-8 px-3 font-mono text-xs transition-colors ${
                 tab === round ? "bg-panel-2 text-text" : "text-muted hover:text-text"
               }`}
             >
               {tab}
-              {tab === currentRound && <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-up align-middle" />}
+              {tab === currentRound && <span className="ml-1.5 inline-block h-1.5 w-1.5 round bg-up align-middle" />}
             </button>
           ))}
         </div>
@@ -126,7 +126,7 @@ export default function AdminLeaderboard({ currentRound }: AdminLeaderboardProps
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Find team or code"
           aria-label="Filter teams"
-          className="h-9 w-44 rounded-lg border border-line-strong bg-bg px-3 text-sm outline-none placeholder:text-faint focus:border-accent"
+          className="h-9 w-44 border border-line-strong bg-bg px-3 text-sm outline-none placeholder:text-faint focus:border-accent"
         />
         <span className="ml-auto font-mono text-xs text-faint">
           {ranked.length} teams{updatedAt ? ` / ${updatedAt.toLocaleTimeString()}` : ""}
@@ -134,19 +134,19 @@ export default function AdminLeaderboard({ currentRound }: AdminLeaderboardProps
         <button
           type="button"
           onClick={toggleFullscreen}
-          className="h-9 rounded-lg border border-line-strong px-3 text-xs text-muted transition-colors hover:text-text"
+          className="h-9 border border-line-strong px-3 text-xs text-muted transition-colors hover:text-text"
         >
           {fullscreen ? "Exit fullscreen" : "Fullscreen"}
         </button>
       </div>
 
       {error && (
-        <div role="status" className="rounded-lg border border-warn/40 bg-warn-soft px-4 py-2.5 text-sm text-warn">
+        <div role="status" className="border border-warn/40 bg-warn-soft px-4 py-2.5 text-sm text-warn">
           {error}
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-md border border-line">
+      <div className="overflow-x-auto border border-line">
         <table className={`w-full border-collapse ${fullscreen ? "text-lg" : "text-sm"}`}>
           <thead>
             <tr className="border-b border-line font-mono text-[11px] uppercase tracking-[0.08em] text-muted">
@@ -175,7 +175,7 @@ export default function AdminLeaderboard({ currentRound }: AdminLeaderboardProps
               Array.from({ length: 6 }).map((_, index) => (
                 <tr key={index} className="border-b border-line last:border-0">
                   <td colSpan={8} className="px-4 py-3">
-                    <div className="h-5 animate-pulse rounded bg-panel-2" />
+                    <div className="h-5 animate-pulse bg-panel-2" />
                   </td>
                 </tr>
               ))}
@@ -197,9 +197,9 @@ export default function AdminLeaderboard({ currentRound }: AdminLeaderboardProps
                   <td className="px-2 py-2.5 font-medium">{entry.team}</td>
                   <td className="px-2 py-2.5 font-mono text-xs text-muted">{entry.team_code}</td>
                   <td className="hidden px-2 py-2.5 md:table-cell">
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-line">
+                    <div className="h-1.5 w-full overflow-hidden round bg-line">
                       <div
-                        className={`h-full rounded-full ${currentScore < 0 ? "bg-down" : entry.rank <= 3 ? "bg-up" : "bg-up/50"}`}
+                        className={`h-full ${currentScore < 0 ? "bg-down" : entry.rank <= 3 ? "bg-up" : "bg-up/50"}`}
                         style={{ width: `${width}%` }}
                       />
                     </div>

@@ -3,7 +3,7 @@ export type ChartTone = "warn" | "down" | "cool" | "alpha";
 const TONE_COLOR: Record<ChartTone, string> = {
   warn: "var(--warn)",
   down: "var(--down)",
-  cool: "#ff8f9b",
+  cool: "var(--recover)",
   alpha: "var(--alpha)",
 };
 

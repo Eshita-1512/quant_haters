@@ -146,17 +146,17 @@ export default function DashboardPage() {
 
       <main className="mx-auto flex max-w-[120rem] flex-col gap-5 px-6 md:px-10 xl:px-16 py-6 sm:py-8">
         {error && (
-          <div role="status" className="rounded-lg border border-warn/40 bg-warn-soft px-4 py-2.5 text-sm text-warn">
+          <div role="status" className="border border-warn/40 bg-warn-soft px-4 py-2.5 text-sm text-warn">
             Connection problem: {error} {status ? "Showing the last known state." : "Retrying..."}
           </div>
         )}
 
         {!status ? (
           <div className="grid gap-5">
-            <div className="h-36 animate-pulse rounded-md border border-line bg-panel" />
+            <div className="h-36 animate-pulse border border-line bg-panel" />
             <div className="grid gap-5 lg:grid-cols-3">
-              <div className="h-64 animate-pulse rounded-md border border-line bg-panel" />
-              <div className="h-64 animate-pulse rounded-md border border-line bg-panel lg:col-span-2" />
+              <div className="h-64 animate-pulse border border-line bg-panel" />
+              <div className="h-64 animate-pulse border border-line bg-panel lg:col-span-2" />
             </div>
           </div>
         ) : status.current_round === "R1" && status.round_phase === "scheduled" ? (
@@ -239,7 +239,7 @@ export default function DashboardPage() {
             </div>
 
             {status.submission_type === "signal" && (
-              <section className="rise-in rounded-lg border border-line bg-panel p-5 sm:p-6">
+              <section className="rise-in border border-line bg-panel p-5 sm:p-6">
                 <PositionPreview file={draft} />
               </section>
             )}

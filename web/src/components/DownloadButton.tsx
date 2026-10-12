@@ -34,11 +34,11 @@ export default function DownloadButton({ label, disabled, onDownloaded, onAttemp
         type="button"
         onClick={handleClick}
         disabled={disabled || state.kind === "loading"}
-        className={`inline-flex h-11 items-center justify-center gap-2 rounded-lg px-5 text-sm font-semibold transition-colors disabled:cursor-not-allowed ${base}`}
+        className={`inline-flex h-11 items-center justify-center gap-2 px-5 text-sm font-semibold transition-colors disabled:cursor-not-allowed ${base}`}
       >
         {state.kind === "loading" ? (
           <>
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            <span className="h-4 w-4 animate-spin round border-2 border-current border-t-transparent" />
             Preparing download...
           </>
         ) : (

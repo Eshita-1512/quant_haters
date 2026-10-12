@@ -74,10 +74,10 @@ export default function PublicLeaderboardPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-up animate-pulse" />
+              <span className="h-2 w-2 round bg-up animate-pulse" />
               <span className="font-mono text-xs uppercase tracking-wider text-muted">Official Standings</span>
             </div>
-            <h1 className="mt-1 font-display text-5xl font-extrabold uppercase leading-none">Leaderboard</h1>
+            <h1 className="mt-1 font-display text-6xl font-extrabold uppercase leading-none">Leaderboard</h1>
             <p className="text-sm text-muted">
               Official snapshots published by organizers. Auto-updates every 10 seconds.
             </p>
@@ -92,7 +92,7 @@ export default function PublicLeaderboardPage() {
             <button
               type="button"
               onClick={toggleFullscreen}
-              className="rounded-lg border border-line-strong px-3 py-1.5 font-mono text-xs text-muted hover:border-line hover:text-text transition-colors"
+              className="btn-ghost min-h-10 px-3 text-base"
             >
               {fullscreen ? "Exit Fullscreen" : "Projector Mode"}
             </button>
@@ -107,7 +107,7 @@ export default function PublicLeaderboardPage() {
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search team..."
                 aria-label="Search teams"
-                className="h-10 w-full max-w-xs rounded-lg border border-line-strong bg-bg px-3 font-mono text-xs outline-none focus:border-accent"
+                className="h-10 w-full max-w-xs border border-line-strong bg-bg px-3 font-mono text-xs outline-none focus:border-accent"
               />
               <span className="font-mono text-xs text-muted">
                 {filtered.length} {filtered.length === 1 ? "team" : "teams"} ranked
@@ -115,7 +115,7 @@ export default function PublicLeaderboardPage() {
             </div>
 
             {error && (
-              <div className="rounded-lg border border-warn/40 bg-warn-soft px-4 py-2.5 text-sm text-warn">
+              <div className="border border-warn/40 bg-warn-soft px-4 py-2.5 text-sm text-warn">
                 {error}
               </div>
             )}
@@ -132,7 +132,7 @@ export default function PublicLeaderboardPage() {
                 </p>
                 <Link
                   href={activeTeam ? "/dashboard" : "/"}
-                  className="press mt-6 rounded-md bg-text px-4 py-2 text-xs font-semibold text-bg hover:bg-text/90"
+                  className="press mt-6 bg-text px-4 py-2 text-xs font-semibold text-bg hover:bg-text/90"
                 >
                   {activeTeam ? "Return to Dashboard" : "Back to overview"}
                 </Link>
@@ -165,7 +165,7 @@ export default function PublicLeaderboardPage() {
                           <td className="py-3 px-3 font-mono">
                             {isPodium ? (
                               <span
-                                className={`inline-grid h-6 w-6 place-items-center rounded-md border text-xs font-bold ${badge}`}
+                                className={`inline-grid h-6 w-6 place-items-center border text-xs font-bold ${badge}`}
                               >
                                 {item.rank}
                               </span>
@@ -175,11 +175,11 @@ export default function PublicLeaderboardPage() {
                               </span>
                             )}
                           </td>
-                          <td className="py-3 px-3 font-medium">
+                          <td className="py-3 px-3 text-base font-semibold sm:text-xl">
                             <span className="flex items-center gap-2">
                               {item.team}
                               {isMyTeam && (
-                                <span className="rounded bg-accent/20 px-1.5 py-0.5 font-mono text-[10px] text-accent font-normal">
+                                <span className="bg-accent/20 px-1.5 py-0.5 font-mono text-[10px] text-accent font-normal">
                                   Your Team
                                 </span>
                               )}
@@ -189,7 +189,7 @@ export default function PublicLeaderboardPage() {
                             {item.submissions}
                           </td>
                           <td
-                            className={`py-3 px-3 text-right font-mono font-semibold tabular ${
+                            className={`text-lg sm:text-2xl py-3 px-3 text-right font-mono font-semibold tabular ${
                               item.score < 0 ? "text-down" : isPodium ? "text-up" : "text-text"
                             }`}
                           >

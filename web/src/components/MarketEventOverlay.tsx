@@ -183,7 +183,7 @@ export default function MarketEventOverlay({ stage, stockCode, message, roundNam
       <div key={stage} className={`relative flex min-h-full flex-col ${config.entrance}`}>
         <div className={`flex items-center justify-between gap-4 px-5 py-4 font-mono text-xs uppercase tracking-[0.12em] ${config.accent}`}>
           <span className="flex items-center gap-2">
-            <span className={`siren h-2.5 w-2.5 rounded-full ${config.dot}`} />
+            <span className={`siren h-2.5 w-2.5 round ${config.dot}`} />
             {config.header}
           </span>
           <span className="hidden sm:inline">{stockCode}</span>
@@ -210,10 +210,10 @@ export default function MarketEventOverlay({ stage, stockCode, message, roundNam
             </div>
           </div>
 
-          <div className={`relative h-56 overflow-hidden rounded-md border border-current/30 bg-black/30 sm:h-72 ${config.accent}`}>
+          <div className={`relative h-56 overflow-hidden border border-current/30 bg-black/30 sm:h-72 ${config.accent}`}>
             <MarketChart points={points} tone={config.tone} className="absolute inset-0 h-full w-full" />
             {config.badge && (
-              <div className="absolute left-4 top-4 rounded border border-current/50 bg-black/60 px-2 py-1 font-mono text-[11px] uppercase tracking-wider">
+              <div className="absolute left-4 top-4 border border-current/50 bg-black/60 px-2 py-1 font-mono text-[11px] uppercase tracking-wider">
                 {config.badge}
               </div>
             )}
@@ -222,7 +222,7 @@ export default function MarketEventOverlay({ stage, stockCode, message, roundNam
           <div className="min-h-24">
             {config.waiting && (
               <p className={`flex items-center gap-3 font-mono text-sm ${config.accent}`}>
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                <span className="h-4 w-4 animate-spin round border-2 border-current border-t-transparent" />
                 {config.waiting}
               </p>
             )}
@@ -235,13 +235,13 @@ export default function MarketEventOverlay({ stage, stockCode, message, roundNam
                 <button
                   type="button"
                   onClick={onEnter}
-                  className={`press inline-flex h-14 items-center justify-center gap-3 rounded-md px-8 font-display text-xl font-extrabold uppercase tracking-wide ${
+                  className={`press inline-flex h-14 items-center justify-center gap-3 px-8 font-display text-xl font-extrabold uppercase tracking-wide ${
                     stage === "alpha"
-                      ? "border-[1.5px] border-alpha bg-transparent text-[#d6cfff] hover:border-[#a98bff] hover:bg-[#a98bff]/15 hover:text-white hover:shadow-[0_0_0_3px_rgba(169,139,255,0.35)] focus-visible:border-[#a98bff] focus-visible:shadow-[0_0_0_3px_rgba(169,139,255,0.35)]"
+                      ? "border-[1.5px] border-alpha bg-transparent text-text hover:border-alpha hover:bg-alpha/15 hover:text-white focus-visible:border-alpha"
                       : "crash-pulse bg-down text-white"
                   }`}
                 >
-                  {stage === "alpha" && <span aria-hidden className="live-dot h-2 w-2 rounded-full bg-alpha-2" />}
+                  {stage === "alpha" && <span aria-hidden className="live-dot h-2 w-2 round bg-alpha-2" />}
                   {config.cta}
                   <svg aria-hidden viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M4 10h12m0 0-4-4m4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />

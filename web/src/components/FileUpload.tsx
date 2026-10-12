@@ -98,7 +98,7 @@ export default function FileUpload({
         }}
         onDragLeave={() => setDragging(false)}
         onDrop={onDrop}
-        className={`flex min-h-40 flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed px-6 py-8 text-center transition-colors ${zoneTone}`}
+        className={`flex min-h-40 flex-col items-center justify-center gap-2 border-2 border-dashed px-6 py-8 text-center transition-colors ${zoneTone}`}
       >
         <input
           ref={inputRef}
@@ -134,11 +134,11 @@ export default function FileUpload({
           type="button"
           onClick={submit}
           disabled={!file || disabled || uploading}
-          className={`inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-lg px-5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:bg-line-strong disabled:text-faint bg-up text-bg hover:bg-up/90`}
+          className={`inline-flex h-11 flex-1 items-center justify-center gap-2 px-5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:bg-line-strong disabled:text-faint bg-up text-bg hover:bg-up/90`}
         >
           {uploading ? (
             <>
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              <span className="h-4 w-4 animate-spin round border-2 border-current border-t-transparent" />
               Uploading...
             </>
           ) : (
@@ -149,7 +149,7 @@ export default function FileUpload({
           <button
             type="button"
             onClick={clear}
-            className="h-11 rounded-lg border border-line-strong px-4 text-sm text-muted transition-colors hover:text-text"
+            className="h-11 border border-line-strong px-4 text-sm text-muted transition-colors hover:text-text"
           >
             Clear
           </button>
@@ -158,7 +158,7 @@ export default function FileUpload({
 
       <div aria-live="polite">
         {state.kind === "success" && (
-          <div className="rounded-lg border border-up/40 bg-up-soft p-4">
+          <div className="border border-up/40 bg-up-soft p-4">
             <p className="text-sm font-semibold text-up">Submission received</p>
             <p className="mt-1 text-xs text-muted">Scores stay hidden until the organizers publish the leaderboard.</p>
             <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-xs text-muted">
@@ -174,7 +174,7 @@ export default function FileUpload({
           </div>
         )}
         {state.kind === "error" && (
-          <div role="alert" className="rounded-lg border border-down/50 bg-down-soft p-4">
+          <div role="alert" className="border border-down/50 bg-down-soft p-4">
             <p className="text-sm font-semibold text-down">Upload rejected</p>
             <p className="mt-1 font-mono text-sm text-text">{state.message}</p>
           </div>
