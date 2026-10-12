@@ -88,33 +88,56 @@ export default function ResultsControls({ currentRound }: ResultsControlsProps) 
       {published && <p className="font-mono text-xs text-up">{published}</p>}
 
       {backtest && (
-        <div>
-          <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.08em] text-muted">Final rankings</p>
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted">
+              Official Final Cumulative Standings (R1: 20%, R2: 35%, R3: 45%)
+            </p>
+            <span className="rounded bg-up/10 px-2 py-0.5 font-mono text-[11px] font-semibold text-up">
+              Published to Public Leaderboard
+            </span>
+          </div>
           {backtest.rankings.length === 0 ? (
             <p className="text-sm text-faint">No teams were ranked.</p>
           ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-line text-left font-mono text-[10px] uppercase tracking-wider text-muted">
-                  <th className="px-2 py-2">Rank</th>
-                  <th className="px-2 py-2">Team</th>
-                  <th className="px-2 py-2 text-right">Score</th>
-                </tr>
-              </thead>
-              <tbody>
-                {backtest.rankings.map((entry) => (
-                  <tr key={entry.rank} className="border-b border-line last:border-0">
-                    <td className="tabular px-2 py-2 font-mono text-xs">{String(entry.rank).padStart(2, "0")}</td>
-                    <td className="px-2 py-2">{entry.team}</td>
-                    <td
-                      className={`tabular px-2 py-2 text-right font-mono ${entry.score < 0 ? "text-down" : "text-text"}`}
-                    >
-                      {formatScore(entry.score)}
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-line text-left font-mono text-[10px] uppercase tracking-wider text-muted">
+                    <th className="px-2 py-2">Rank</th>
+                    <th className="px-2 py-2">Team</th>
+                    <th className="px-2 py-2 text-right">R1 (20%)</th>
+                    <th className="px-2 py-2 text-right">R2 (35%)</th>
+                    <th className="px-2 py-2 text-right">R3 (45%)</th>
+                    <th className="px-2 py-2 text-right">Cumulative Score</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {backtest.rankings.map((entry) => (
+                    <tr key={entry.rank} className="border-b border-line last:border-0 hover:bg-panel-2/50">
+                      <td className="tabular px-2 py-2 font-mono text-xs">{String(entry.rank).padStart(2, "0")}</td>
+                      <td className="px-2 py-2 font-medium">{entry.team}</td>
+                      <td className="tabular px-2 py-2 text-right font-mono text-muted">
+                        {entry.r1_score != null ? formatScore(entry.r1_score) : "—"}
+                      </td>
+                      <td className="tabular px-2 py-2 text-right font-mono text-muted">
+                        {entry.r2_score != null ? formatScore(entry.r2_score) : "—"}
+                      </td>
+                      <td className="tabular px-2 py-2 text-right font-mono text-muted">
+                        {entry.r3_score != null ? formatScore(entry.r3_score) : "—"}
+                      </td>
+                      <td
+                        className={`tabular px-2 py-2 text-right font-mono font-bold ${
+                          entry.score < 0 ? "text-down" : "text-up"
+                        }`}
+                      >
+                        {formatScore(entry.score)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       )}
@@ -129,7 +152,7 @@ export default function ResultsControls({ currentRound }: ResultsControlsProps) 
         >
           {pending === "snapshot"
             ? "Every visitor to the public leaderboard sees these rankings until you publish again."
-            : "Every active team needs a valid Round 3 submission, or the backtest stops without a partial result."}
+            : "Evaluates Round 3 books against the hidden market data, calculates weighted cumulative scores (20% R1 + 35% R2 + 45% R3), and publishes the final standings to the public leaderboard for all participants to see."}
         </ConfirmDialog>
       )}
     </div>

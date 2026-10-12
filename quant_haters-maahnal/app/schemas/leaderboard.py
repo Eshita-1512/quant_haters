@@ -1,5 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -9,6 +10,31 @@ class LeaderboardEntry(BaseModel):
     team: str
     score: Decimal
     submissions: int
+
+
+class CumulativeLeaderboardEntry(BaseModel):
+    rank: int
+    team: str
+    cumulative_score: float
+    r1_score: Decimal | None = None
+    r2_score: Decimal | None = None
+    r3_score: Decimal | None = None
+    submissions: int
+
+
+class FinalResultsEntry(BaseModel):
+    rank: int
+    team: str
+    score: float
+    r1_score: float | None = None
+    r2_score: float | None = None
+    r3_score: float | None = None
+    submissions: int = 0
+
+
+class PublicFinalResults(BaseModel):
+    status: Literal["success", "pending"] = "pending"
+    rankings: list[FinalResultsEntry] = []
 
 
 class AdminLeaderboardEntry(LeaderboardEntry):

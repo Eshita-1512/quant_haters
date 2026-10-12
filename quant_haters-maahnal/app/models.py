@@ -203,6 +203,7 @@ class LeaderboardSnapshot(TimestampMixin, Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     round_id: Mapped[int] = mapped_column(ForeignKey("rounds.id"))
     published_by_admin_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("admin_users.id"))
+    is_final: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
 
 
 class LeaderboardSnapshotEntry(Base):
@@ -212,7 +213,7 @@ class LeaderboardSnapshotEntry(Base):
         ForeignKey("leaderboard_snapshots.id", ondelete="CASCADE"), primary_key=True
     )
     rank: Mapped[int] = mapped_column(Integer, primary_key=True)
-    team_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("teams.id"))
+    team_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("teams.id"), nullable=True)
     team_name: Mapped[str] = mapped_column(String(150))
     score: Mapped[Decimal] = mapped_column(Numeric(12, 6))
     submissions: Mapped[int] = mapped_column(Integer)

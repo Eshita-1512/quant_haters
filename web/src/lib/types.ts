@@ -122,6 +122,26 @@ export interface LeaderboardEntry {
   submissions: number;
 }
 
+export interface CumulativeLeaderboardEntry {
+  rank: number;
+  team: string;
+  cumulative_score: number;
+  r1_score: number | null;
+  r2_score: number | null;
+  r3_score: number | null;
+  submissions: number;
+}
+
+export interface FinalResultsEntry {
+  rank: number;
+  team: string;
+  score: number;
+  r1_score?: number | null;
+  r2_score?: number | null;
+  r3_score?: number | null;
+  submissions?: number;
+}
+
 export interface AdminLeaderboardEntry {
   rank: number;
   team: string;
@@ -142,10 +162,20 @@ export interface FinalBacktestEntry {
   rank: number;
   team: string;
   score: number;
+  cumulative_score?: number;
+  r1_score?: number | null;
+  r2_score?: number | null;
+  r3_score?: number | null;
+  submissions?: number;
 }
 
 export interface FinalBacktestResult {
   status: "success";
   round: "R3";
   rankings: FinalBacktestEntry[];
+}
+
+export interface PublicFinalResults {
+  status: "success" | "pending";
+  rankings: FinalResultsEntry[];
 }

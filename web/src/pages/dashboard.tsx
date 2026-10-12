@@ -237,7 +237,7 @@ export default function DashboardPage() {
                   />
                   <div>
                     <h3 className="mb-3 text-sm font-medium">Required format</h3>
-                    <FormatHint type={status.submission_type} />
+                    <FormatHint type={status.submission_type} round={status.current_round} />
                   </div>
                 </div>
 

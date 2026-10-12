@@ -8,11 +8,13 @@ import type {
   AdminStatus,
   AuthRequest,
   AuthResponse,
+  CumulativeLeaderboardEntry,
   DownloadResponse,
   EventStatus,
   FinalBacktestResult,
   FlashCrashRequest,
   LeaderboardEntry,
+  PublicFinalResults,
   RoundCode,
   SnapshotResult,
   StartRoundRequest,
@@ -21,6 +23,7 @@ import type {
   UploadSuccess,
   TeamProfile,
 } from "@/lib/types";
+
 
 export { ApiError };
 
@@ -180,6 +183,21 @@ const httpApi = {
     );
     return entries.map((entry) => ({ ...entry, score: Number(entry.score) }));
   },
+  getCumulativeLeaderboard: async (): Promise<CumulativeLeaderboardEntry[]> => {
+    const entries = await request<CumulativeLeaderboardEntry[]>(
+      endpoints.cumulativeLeaderboard,
+      { scope: "none" },
+    );
+    return entries.map((e) => ({
+      ...e,
+      cumulative_score: Number(e.cumulative_score),
+      r1_score: e.r1_score != null ? Number(e.r1_score) : null,
+      r2_score: e.r2_score != null ? Number(e.r2_score) : null,
+      r3_score: e.r3_score != null ? Number(e.r3_score) : null,
+    }));
+  },
+  getFinalResults: (): Promise<PublicFinalResults> =>
+    request<PublicFinalResults>(endpoints.finalResults, { scope: "none" }),
   getMe: () => request<TeamProfile>(endpoints.teamMe),
   updateTeamName: (teamName: string) =>
     request<TeamProfile>(endpoints.teamName, {
@@ -194,6 +212,8 @@ const mockApi: typeof httpApi = {
   getDownload: () => runMock("team", () => mockBackend.getDownload(session.getToken())),
   upload: (file, round) => runMock("team", () => mockBackend.upload(session.getToken(), file, round)),
   getLeaderboard: () => runMock("none", () => []),
+  getCumulativeLeaderboard: () => runMock("none", () => []),
+  getFinalResults: () => runMock("none", () => ({ status: "pending" as const, rankings: [] })),
   getMe: () =>
     runMock("team", () => ({
       team_id: session.getTeam() || "DEMO",

@@ -195,19 +195,21 @@ export default function LandingPage() {
 
         <Section
           title="What you upload"
-          intro="One CSV per upload. Every file has exactly 50 rows, with timestamps 1 to 50, each once."
+          intro="One CSV per upload. Exactly 50 rows matching the round prediction window (R1: 801–850, R2/R3: 851–900)."
         >
           <div className="grid gap-12 md:grid-cols-2 md:gap-0 md:divide-x md:divide-line">
             <Reveal className="min-w-0 md:pr-12">
-              <h3 className="font-display text-3xl font-extrabold uppercase leading-none">Rounds 1 and 2: predictions</h3>
+              <h3 className="font-display text-3xl font-extrabold uppercase leading-none">Rounds 1 & 2: predictions</h3>
+              <p className="mt-2 text-xs text-muted">Round 1 timestamps: 801–850 | Round 2 timestamps: 851–900</p>
               <div className="mt-5">
-                <FormatHint type="prediction" />
+                <FormatHint type="prediction" round="R1" />
               </div>
             </Reveal>
             <Reveal delay={120} className="min-w-0 md:pl-12">
               <h3 className="font-display text-3xl font-extrabold uppercase leading-none">Round 3: signals</h3>
+              <p className="mt-2 text-xs text-muted">Round 3 timestamps: 851–900</p>
               <div className="mt-5">
-                <FormatHint type="signal" />
+                <FormatHint type="signal" round="R3" />
               </div>
             </Reveal>
           </div>

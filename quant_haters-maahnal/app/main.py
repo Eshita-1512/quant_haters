@@ -26,6 +26,17 @@ def create_app() -> FastAPI:
     app.include_router(submissions_router, prefix="/api/v1")
     app.include_router(admin_router, prefix="/api/v1")
 
+    @app.on_event("startup")
+    def startup_checks() -> None:
+        from sqlalchemy import text
+        from app.database import engine
+        try:
+            with engine.connect() as conn:
+                conn.execute(text("ALTER TABLE leaderboard_snapshots ADD COLUMN IF NOT EXISTS is_final BOOLEAN NOT NULL DEFAULT FALSE;"))
+                conn.commit()
+        except Exception:
+            pass
+
     @app.get("/health", tags=["health"])
     def health() -> dict[str, str]:
         return {"status": "ok"}
