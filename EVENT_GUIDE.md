@@ -85,7 +85,7 @@ Screens refresh every 5 seconds, so transitions reach teams within about 5 secon
 ### 4.4 Submission rules teams will hit
 
 - **Scores are never shown to teams.** After an upload they see "Submission received", the submission number and how many they have left.
-- **10 submissions per team per round** (`rounds.max_submissions_per_team`).
+- **10 submissions per team in total, across all rounds combined** (`TOTAL_SUBMISSIONS_PER_TEAM` in `app/services/submissions.py`).
 - **One attempt per 60 seconds per team.** Rejected files also start the 60-second wait.
 - **"Submissions left" appears after the first upload** from that browser; it is not loaded on page open.
 

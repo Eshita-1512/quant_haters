@@ -33,7 +33,7 @@ function uploadBlockReason(status: EventStatus, seconds: number, remaining: numb
     return `Uploads are closed. ${status.round_name} is ${phaseLabels[status.round_phase].toLowerCase()}.`;
   }
   if (seconds <= 0) return `${status.round_name} has ended. Uploads are closed.`;
-  if (remaining !== null && remaining <= 0) return "You have used every submission for this round.";
+  if (remaining !== null && remaining <= 0) return "You have used all 10 submissions across all rounds.";
   return null;
 }
 
@@ -132,9 +132,8 @@ export default function DashboardPage() {
     });
   };
 
-  const roundProgress = status && progress?.round === status.current_round ? progress : null;
-  const remainingThisRound = roundProgress?.remaining ?? status?.submissions_remaining ?? null;
-  const submittedThisRound = roundProgress?.submitted ?? status?.submissions_count ?? null;
+  const remainingTotal = progress?.remaining ?? status?.submissions_remaining ?? null;
+  const submittedTotal = progress?.submitted ?? status?.submissions_count ?? null;
   const roundHistory = status ? history.filter((item) => item.round === status.current_round) : [];
 
   const title =
@@ -214,12 +213,15 @@ export default function DashboardPage() {
                 <Panel title="Round standing" telemetryTag="// METRICS">
                   <dl className="grid grid-cols-3 gap-2">
                     <div>
-                      <dt className="text-xs text-muted">Submitted</dt>
-                      <dd className="tabular mt-1 font-mono text-xl font-semibold">{submittedThisRound ?? "--"}</dd>
+                      <dt className="text-xs text-muted">Total Submitted</dt>
+                      <dd className="tabular mt-1 font-mono text-xl font-semibold">
+                        {submittedTotal ?? "--"}{" "}
+                        <span className="text-xs font-normal text-muted">/ 10</span>
+                      </dd>
                     </div>
                     <div>
-                      <dt className="text-xs text-muted">Remaining</dt>
-                      <dd className="tabular mt-1 font-mono text-xl font-semibold">{remainingThisRound ?? "--"}</dd>
+                      <dt className="text-xs text-muted">Total Remaining</dt>
+                      <dd className="tabular mt-1 font-mono text-xl font-semibold">{remainingTotal ?? "--"}</dd>
                     </div>
                     <div>
                       <dt className="text-xs text-muted">Public score</dt>
@@ -241,7 +243,7 @@ export default function DashboardPage() {
                   <FileUpload
                     key={status.current_round}
                     round={status.current_round}
-                    disabledReason={uploadBlockReason(status, seconds, remainingThisRound)}
+                    disabledReason={uploadBlockReason(status, seconds, remainingTotal)}
                     onSubmitted={onSubmitted}
                     onFileChange={setDraft}
                   />

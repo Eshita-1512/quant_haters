@@ -191,10 +191,10 @@ export default function FileUpload({
             <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-xs text-muted">
               <div>
                 <dt>Submission</dt>
-                <dd className="tabular text-text">#{state.result.submission_number}</dd>
+                <dd className="tabular text-text">#{state.result.submission_number} of 10</dd>
               </div>
               <div>
-                <dt>Remaining</dt>
+                <dt>Remaining (Total)</dt>
                 <dd className="tabular text-text">{state.result.submissions_remaining}</dd>
               </div>
             </dl>

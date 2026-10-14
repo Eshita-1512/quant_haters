@@ -401,8 +401,9 @@ export const mockBackend = {
     if (!file.name.toLowerCase().endsWith(".csv")) throw new ApiError("Only .csv files are accepted.", 400);
     if (requestedRound !== round.code) throw new ApiError(`Round ${requestedRound.slice(1)} is closed.`, 400);
     if (!isOpen(state)) throw new ApiError(`Round ${roundNumber} is closed.`, 400);
-    if (record.submissions[round.code] >= MAX_SUBMISSIONS) {
-      throw new ApiError(`Submission limit (${MAX_SUBMISSIONS}) reached for this round.`, 400);
+    const totalSubmitted = Object.values(record.submissions).reduce((sum, n) => sum + (n ?? 0), 0);
+    if (totalSubmitted >= MAX_SUBMISSIONS) {
+      throw new ApiError(`Submission limit (${MAX_SUBMISSIONS} total across all rounds) reached.`, 400);
     }
     const text = await file.text();
     const error = validateCsv(text, round.submissionType);
@@ -422,7 +423,7 @@ export const mockBackend = {
       team_id: team,
       round: roundNumber,
       submission_number: submissionNumber,
-      submissions_remaining: MAX_SUBMISSIONS - submissionNumber,
+      submissions_remaining: MAX_SUBMISSIONS - totalSubmitted - 1,
     };
   },
 };
