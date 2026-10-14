@@ -114,10 +114,10 @@ export default function WaitingRoom({ status, team, isStarting = false }: Waitin
 
       {/* Center Main Stage */}
       <main className="relative z-10 mx-auto my-auto flex w-full max-w-4xl flex-col items-center px-6 py-10 text-center sm:py-16">
-        {/* Market Status Pill */}
         <div className="inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent/10 px-4 py-1.5 font-mono text-xs font-semibold uppercase tracking-widest text-accent">
           <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
-          Round 1 Scheduled — Market Opens Shortly
+          <span>Round 1 Scheduled — Market Opens Shortly</span>
+          <span className="text-faint">[0xBF // READY]</span>
         </div>
 
         <h1 className="mt-6 font-display text-4xl font-extrabold uppercase tracking-tight text-text sm:text-6xl md:text-7xl">

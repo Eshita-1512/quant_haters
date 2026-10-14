@@ -3,6 +3,8 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState, type FormEvent } from "react";
 import PasswordInput from "@/components/entry/PasswordInput";
+import BruteForceToggle from "@/components/BruteForceToggle";
+import DecipherText from "@/components/DecipherText";
 import { api } from "@/lib/api";
 import { config } from "@/lib/config";
 import { session } from "@/lib/session";
@@ -20,7 +22,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
 
   useEffect(() => {
     session.clear();
@@ -57,11 +58,20 @@ export default function LoginPage() {
       <Head>
         <title>Log in | BigShort</title>
       </Head>
+      <div className="absolute right-6 top-6 z-20">
+        <BruteForceToggle compact={false} />
+      </div>
+
       <main className="mx-auto grid min-h-screen max-w-[120rem] items-center gap-12 px-6 md:px-10 xl:px-16 py-12 lg:grid-cols-[1.1fr_1fr]">
         <div>
-          <h1 className="flex flex-wrap items-baseline gap-x-[0.22em] font-display text-7xl font-extrabold uppercase leading-[0.85] sm:text-8xl">
-            <span>Big</span>
-            <span className="text-down">Short</span>
+          <div className="flex items-center gap-2 font-mono text-xs text-accent">
+            <span>[AUTH_GATEWAY // 0xBF]</span>
+          </div>
+          <h1 className="mt-2 flex flex-wrap items-baseline gap-x-[0.22em] font-display text-7xl font-extrabold uppercase leading-[0.85] sm:text-8xl">
+            <DecipherText text="Big" autoStart={true} delayMs={100} />
+            <span className="text-down">
+              <DecipherText text="Short" autoStart={true} delayMs={300} />
+            </span>
           </h1>
           <p className="mt-4 max-w-md text-muted">Log in with your team code and password.</p>
           <ol className="mt-10 hidden max-w-md gap-px overflow-hidden rounded-md border border-line bg-line sm:grid">
@@ -77,16 +87,23 @@ export default function LoginPage() {
               </li>
             ))}
           </ol>
-          <Link
-            href="/"
-            className="mt-6 inline-flex min-h-11 items-center text-sm text-muted underline-offset-4 hover:text-text hover:underline"
-          >
-            What is BigShort?
-          </Link>
+          <div className="mt-6 flex items-center gap-4">
+            <Link
+              href="/"
+              className="inline-flex min-h-11 items-center font-mono text-xs text-muted underline-offset-4 hover:text-text hover:underline"
+            >
+              ← What is BigShort?
+            </Link>
+          </div>
         </div>
 
-        <div className="rise-in rounded-lg border border-line bg-panel p-6 sm:p-8">
-          <h2 className="text-lg font-semibold">Log in</h2>
+        <div className="bf-hud-panel rise-in rounded-lg border border-line bg-panel p-6 sm:p-8">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Log in</h2>
+            <span className="font-mono text-[10px] uppercase tracking-wider text-accent">
+              [SEC_GATE]
+            </span>
+          </div>
           <p className="mt-1 text-sm text-muted">Your organizers gave your team a team code and password. Everyone on your team uses the same login.</p>
 
           {expired && !error && (
@@ -97,9 +114,12 @@ export default function LoginPage() {
 
           <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4" noValidate>
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="login-identifier" className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted">
-                Team code
-              </label>
+              <div className="flex items-center justify-between">
+                <label htmlFor="login-identifier" className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted">
+                  Team code
+                </label>
+                <span className="font-mono text-[10px] text-faint">// EXACT MATCH</span>
+              </div>
               <input
                 id="login-identifier"
                 value={identifier}
@@ -113,9 +133,12 @@ export default function LoginPage() {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="login-password" className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted">
-                Password
-              </label>
+              <div className="flex items-center justify-between">
+                <label htmlFor="login-password" className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted">
+                  Password
+                </label>
+                <span className="font-mono text-[10px] text-faint">// ENCRYPTED</span>
+              </div>
               <PasswordInput
                 id="login-password"
                 value={password}
@@ -127,8 +150,8 @@ export default function LoginPage() {
 
             <div aria-live="polite" className="min-h-5">
               {error && (
-                <p key={error} className="nudge text-sm text-down">
-                  {error}
+                <p key={error} className="nudge font-mono text-xs text-down">
+                  [ERR] {error}
                 </p>
               )}
             </div>
@@ -136,11 +159,15 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="press inline-flex h-11 items-center justify-center gap-2 rounded-md bg-text text-sm font-semibold text-bg hover:bg-text/90 disabled:cursor-wait disabled:border disabled:border-line-strong disabled:bg-panel-2 disabled:text-muted"
+              className="press relative inline-flex h-11 items-center justify-center gap-2 rounded-md bg-text text-sm font-semibold uppercase tracking-wider text-bg hover:bg-text/90 disabled:cursor-wait disabled:border disabled:border-line-strong disabled:bg-panel-2 disabled:text-muted"
             >
-              {submitting && <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />}
-              {submitting ? "Logging in..." : "Enter the market"}
+              {submitting ? "Authenticating..." : "Authorize session"}
             </button>
+
+            <div className="mt-2 flex items-center justify-between font-mono text-[10px] text-faint">
+              <span>// RATE_LIMIT: 1 UPLOAD/60S</span>
+              <span>BRUTE_FORCE_SHIELD: ACTIVE</span>
+            </div>
           </form>
 
           <div className="mt-5 flex flex-col gap-1 text-sm text-muted">

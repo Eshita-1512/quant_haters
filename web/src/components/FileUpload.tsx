@@ -115,16 +115,20 @@ export default function FileUpload({
         {disabled ? (
           <p className="text-sm text-muted">{disabledReason}</p>
         ) : file ? (
-          <p className="text-sm">
-            <span className="font-mono text-text">{file.name}</span>
-            <span className="ml-2 text-muted">{formatBytes(file.size)}</span>
-          </p>
+          <div className="flex flex-col items-center gap-1">
+            <p className="text-sm">
+              <span className="font-mono text-text">{file.name}</span>
+              <span className="ml-2 text-muted">{formatBytes(file.size)}</span>
+            </p>
+            <span className="font-mono text-[10px] text-accent">// FILE_READY_FOR_EVALUATION</span>
+          </div>
         ) : (
           <>
             <p className="text-sm text-text">
               Drop your CSV here or <span className="text-accent underline underline-offset-4">browse</span>
             </p>
             <p className="text-xs text-muted">.csv only, up to {formatBytes(config.maxUploadBytes)}</p>
+            <span className="mt-1 font-mono text-[10px] text-faint">[0xBF // 50_ROW_MATRIX_EVAL]</span>
           </>
         )}
       </label>

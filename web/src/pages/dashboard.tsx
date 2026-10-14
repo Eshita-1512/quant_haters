@@ -11,6 +11,7 @@ import FormatHint from "@/components/FormatHint";
 import MarketEventOverlay, { type OverlayStage } from "@/components/MarketEventOverlay";
 import Panel from "@/components/Panel";
 import WaitingRoom from "@/components/WaitingRoom";
+import BruteForceTelemetry from "@/components/BruteForceTelemetry";
 import { useCountdown } from "@/hooks/useCountdown";
 import { useEventStatus } from "@/hooks/useEventStatus";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
@@ -183,26 +184,34 @@ export default function DashboardPage() {
             {mode === "crash" && <CrashHero message={status.flash_crash_message} />}
             {mode === "alpha" && <AlphaHero status={status} />}
 
-            <Panel className={mode === "crash" ? "border-down/30" : mode === "alpha" ? "border-alpha/25" : ""}>
+            <BruteForceTelemetry
+              stockCode={status.assigned_stock.code}
+              roundCode={status.current_round}
+            />
+
+            <Panel
+              className={mode === "crash" ? "border-down/30" : mode === "alpha" ? "border-alpha/25" : ""}
+              telemetryTag="// SYNC_TIMER"
+            >
               <CountdownTimer status={status} seconds={seconds} />
             </Panel>
 
             <div className="rise-in grid gap-5 lg:grid-cols-3">
               <div className="flex flex-col gap-5">
-                <Panel title="Assigned stock">
+                <Panel title="Assigned stock" telemetryTag="// TARGET_MATRIX">
                   <p className={`font-mono text-3xl font-semibold tracking-tight ${mode === "crash" ? "text-down" : ""}`}>
                     {status.assigned_stock.code}
                   </p>
                   <p className="mt-1 text-sm text-muted">{status.assigned_stock.name}</p>
                 </Panel>
 
-                <Panel title="Upload submission">
+                <Panel title="Dataset download" telemetryTag="// DATA_FEED">
                   <p className="mb-4 text-sm text-muted">Your team&apos;s training and prediction rows for this round.</p>
                   <DownloadButton label="Download dataset" disabled={!status.download_available} />
                   {!status.download_available && <p className="text-xs text-muted">The dataset is not available yet.</p>}
                 </Panel>
 
-                <Panel title="Round standing">
+                <Panel title="Round standing" telemetryTag="// METRICS">
                   <dl className="grid grid-cols-3 gap-2">
                     <div>
                       <dt className="text-xs text-muted">Submitted</dt>
@@ -224,6 +233,7 @@ export default function DashboardPage() {
 
               <Panel
                 title="Upload submission"
+                telemetryTag="// 50_ROW_EVAL_GATE"
                 aside={<span className="font-mono text-[11px] text-faint">{status.current_round}</span>}
                 className="lg:col-span-2"
               >

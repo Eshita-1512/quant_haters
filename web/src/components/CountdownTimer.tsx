@@ -1,6 +1,7 @@
 import { formatDuration } from "@/hooks/useCountdown";
 import { phaseLabels } from "@/lib/format";
 import type { EventStatus } from "@/lib/types";
+import DecipherText from "@/components/DecipherText";
 
 interface CountdownTimerProps {
   status: EventStatus;
@@ -31,8 +32,11 @@ export default function CountdownTimer({ status, seconds }: CountdownTimerProps)
             )}
             {phaseLabels[status.round_phase]}
           </span>
+          <span className="font-mono text-[10px] text-faint">[0xBF // SYNCED]</span>
         </div>
-        <h1 className="mt-2 font-display text-4xl font-extrabold uppercase leading-none sm:text-5xl">{status.round_name}</h1>
+        <h1 className="mt-2 font-display text-4xl font-extrabold uppercase leading-none sm:text-5xl">
+          <DecipherText text={status.round_name} autoStart={false} triggerOnHover />
+        </h1>
       </div>
       <div className="sm:text-right">
         <div className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted">

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { session } from "@/lib/session";
+import BruteForceToggle from "@/components/BruteForceToggle";
+import DecipherText from "@/components/DecipherText";
 
 export type HeaderMode = "default" | "crash" | "alpha";
 
@@ -21,20 +23,22 @@ export default function AppHeader({ team, mode = "default" }: AppHeaderProps) {
 
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-bg/85 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-[120rem] items-center gap-4 px-6 md:px-10 xl:px-16">
+      <div className="mx-auto flex h-14 max-w-[120rem] items-center gap-3 px-6 md:px-10 xl:px-16 sm:gap-4">
         <Link
           href="/dashboard"
-          className="flex min-h-11 items-center gap-[0.22em] font-display text-xl font-extrabold uppercase leading-none"
+          className="group flex min-h-11 items-center gap-[0.22em] font-display text-xl font-extrabold uppercase leading-none"
           aria-label="BigShort dashboard"
         >
-          <span>Big</span>
-          <span className={alpha ? "text-alpha" : "text-down"}>Short</span>
+          <DecipherText text="Big" triggerOnHover autoStart={false} />
+          <span className={alpha ? "text-alpha" : "text-down"}>
+            <DecipherText text="Short" triggerOnHover autoStart={false} />
+          </span>
         </Link>
         <nav className="ml-2 flex items-center gap-1 border-l border-line pl-2">
           <Link
             href="/dashboard"
             className={`inline-flex min-h-11 items-center px-2 font-mono text-xs transition-colors ${
-              router.pathname === "/dashboard" ? "text-text font-semibold" : "text-muted hover:text-text"
+              router.pathname === "/dashboard" ? "font-semibold text-text" : "text-muted hover:text-text"
             }`}
           >
             Desk
@@ -42,7 +46,7 @@ export default function AppHeader({ team, mode = "default" }: AppHeaderProps) {
           <Link
             href="/leaderboard"
             className={`inline-flex min-h-11 items-center px-2 font-mono text-xs transition-colors ${
-              router.pathname === "/leaderboard" ? "text-text font-semibold" : "text-muted hover:text-text"
+              router.pathname === "/leaderboard" ? "font-semibold text-text" : "text-muted hover:text-text"
             }`}
           >
             Standings
@@ -60,16 +64,19 @@ export default function AppHeader({ team, mode = "default" }: AppHeaderProps) {
             Crash mode
           </span>
         )}
-        <div className="ml-auto flex items-center gap-3">
+
+        <div className="ml-auto flex items-center gap-2 sm:gap-3">
+          <BruteForceToggle compact={true} className="hidden sm:inline-flex" />
+
           {team && (
-            <span className="hidden font-mono text-xs text-muted sm:inline">
+            <span className="hidden font-mono text-xs text-muted md:inline">
               TEAM <span className="text-text">{team}</span>
             </span>
           )}
           <button
             type="button"
             onClick={signOut}
-            className="rounded-md border border-line-strong px-3 py-1.5 text-sm text-muted transition-colors hover:border-down hover:text-down"
+            className="rounded-md border border-line-strong px-3 py-1.5 font-mono text-xs text-muted transition-colors hover:border-down hover:text-down"
           >
             Sign out
           </button>

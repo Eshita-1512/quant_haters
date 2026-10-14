@@ -12,6 +12,8 @@ Round 3 (positions in [-1, 1], ``returns`` = return earned by holding row t's po
     net_t       = position_t * return_t - FEE * |position_t - position_(t-1)|   (starts flat)
     alpha_score = sharpe(net) - DD_PENALTY * max_drawdown(equity)
     score       = 100 * clip(alpha_score / SHARPE_CAP, 0, 1)
+    A constant (zero-variance) signal is a lazy buy-and-hold / short-and-hold bet, not a
+    strategy, so its score is multiplied by (1 - STATIC_SIGNAL_PENALTY).
 """
 import math
 import statistics
@@ -20,9 +22,11 @@ from decimal import Decimal
 
 W_BA = 0.5
 W_MCC = 0.5
-FEE = 0.001  # per unit of turnover (10 bps)
+FEE = 0.0005  # per unit of turnover (5 bps) - still punishes noisy, high-turnover models
 DD_PENALTY = 2.0
-SHARPE_CAP = 5.0
+SHARPE_CAP = 8.0  # alpha at which the score maxes out; lowered from 20 so realistic edges are visible
+STATIC_SIGNAL_PENALTY = 0.90  # constant signal is not a strategy: keep only 10% of its score
+STATIC_SIGNAL_TOLERANCE = 1e-9
 PERIODS_PER_YEAR = 252
 
 
@@ -96,4 +100,6 @@ def score_signals(signals: list[Decimal], returns: list[Decimal]) -> SignalScore
 
     alpha = sharpe - DD_PENALTY * max_drawdown
     score = 100 * _clip(alpha / SHARPE_CAP, 0.0, 1.0)
+    if len(positions) > 1 and statistics.pstdev(positions) < STATIC_SIGNAL_TOLERANCE:
+        score *= 1 - STATIC_SIGNAL_PENALTY
     return SignalScore(round(score, 2), sharpe, max_drawdown, total_cost, alpha)

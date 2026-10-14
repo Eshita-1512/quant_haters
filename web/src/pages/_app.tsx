@@ -5,6 +5,7 @@ import { useRouter } from "next/router";
 import { useEffect } from "react";
 import { Big_Shoulders, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import { UNAUTHORIZED_EVENT } from "@/lib/api";
+import { applyBruteForceDom, useBruteForceTheme } from "@/lib/bruteforce";
 
 const display = Big_Shoulders({ variable: "--font-display-face", subsets: ["latin"] });
 const sans = IBM_Plex_Sans({ variable: "--font-sans-face", subsets: ["latin"] });
@@ -12,6 +13,11 @@ const mono = IBM_Plex_Mono({ variable: "--font-mono-face", subsets: ["latin"], w
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
+  const { enabled } = useBruteForceTheme();
+
+  useEffect(() => {
+    applyBruteForceDom(enabled);
+  }, [enabled]);
 
   useEffect(() => {
     const onUnauthorized = () => {

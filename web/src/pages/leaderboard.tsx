@@ -3,6 +3,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import AppHeader from "@/components/AppHeader";
 import Panel from "@/components/Panel";
+import BruteForceTelemetry from "@/components/BruteForceTelemetry";
+import DecipherText from "@/components/DecipherText";
 import { api } from "@/lib/api";
 import { formatScore } from "@/lib/format";
 import { useSession } from "@/lib/session";
@@ -103,8 +105,11 @@ export default function PublicLeaderboardPage() {
               <span className="font-mono text-xs uppercase tracking-wider text-muted">
                 {isFinal ? "Official Event Final Standings" : "Official Standings"}
               </span>
+              <span className="font-mono text-xs uppercase tracking-wider text-accent">[0xBF // LEADERBOARD_MATRIX]</span>
             </div>
-            <h1 className="mt-1 font-display text-5xl font-extrabold uppercase leading-none">Leaderboard</h1>
+            <h1 className="mt-1 font-display text-5xl font-extrabold uppercase leading-none">
+              <DecipherText text="Leaderboard" autoStart={true} delayMs={50} />
+            </h1>
             <p className="text-sm text-muted">
               {isFinal
                 ? "Final Backtest completed! Official cumulative standings with Round 1 (20%), Round 2 (35%), and Round 3 (45%) weights."
@@ -127,6 +132,8 @@ export default function PublicLeaderboardPage() {
             </button>
           </div>
         </div>
+
+        <BruteForceTelemetry />
 
         {isFinal && (
           <div className="rounded-xl border border-gold/40 bg-gold/10 p-4 sm:p-5">

@@ -6,6 +6,9 @@ import FormatHint from "@/components/FormatHint";
 import Reveal from "@/components/Reveal";
 import FieldGuide from "@/components/landing/FieldGuide";
 import Timeline from "@/components/landing/Timeline";
+import BruteForceTelemetry from "@/components/BruteForceTelemetry";
+import BruteForceToggle from "@/components/BruteForceToggle";
+import DecipherText from "@/components/DecipherText";
 import { useInView } from "@/hooks/useInView";
 
 const RULES = [
@@ -24,11 +27,26 @@ function delay(ms: number): CSSProperties {
   return { "--d": `${ms}ms` } as CSSProperties;
 }
 
-function Section({ title, intro, children }: { title: string; intro: string; children: ReactNode }) {
+function Section({
+  title,
+  intro,
+  tag,
+  children,
+}: {
+  title: string;
+  intro: string;
+  tag?: string;
+  children: ReactNode;
+}) {
   return (
     <section className="border-t border-line">
       <div className="mx-auto max-w-[120rem] px-6 md:px-10 xl:px-16 py-20 sm:py-28">
         <Reveal>
+          {tag && (
+            <span className="mb-3 inline-block font-mono text-[11px] uppercase tracking-wider text-accent">
+              {tag}
+            </span>
+          )}
           <h2 className="font-display text-5xl font-extrabold uppercase leading-[0.9] sm:text-7xl">{title}</h2>
           <p className="mt-5 max-w-2xl text-lg text-muted">{intro}</p>
         </Reveal>
@@ -51,7 +69,12 @@ function RulesList() {
           <span className="font-display text-4xl font-extrabold leading-none text-accent sm:text-6xl">
             {String(index + 1).padStart(2, "0")}
           </span>
-          <span className="text-base sm:text-xl">{rule}</span>
+          <div className="flex flex-col gap-1">
+            <span className="text-base sm:text-xl">{rule}</span>
+            <span className="font-mono text-[10px] text-faint">
+              // RULE_CONSTRAINT_0{index + 1}
+            </span>
+          </div>
         </li>
       ))}
     </ol>
@@ -64,7 +87,7 @@ function HeroSection() {
   return (
     <section
       ref={ref}
-      className={`relative mx-auto max-w-[120rem] overflow-hidden px-6 md:px-10 xl:px-16 pb-24 pt-14 sm:pb-32 sm:pt-24 ${
+      className={`relative mx-auto max-w-[120rem] overflow-hidden px-6 md:px-10 xl:px-16 pb-20 pt-14 sm:pb-28 sm:pt-24 ${
         inView ? "is-visible" : ""
       }`}
     >
@@ -135,15 +158,20 @@ function HeroSection() {
         />
       </svg>
       <div className="relative z-10">
-        <p className="hero-rise font-mono text-xs uppercase tracking-[0.12em] text-muted" style={delay(0)}>
-          Machine learning trading sprint
-        </p>
+        <div className="hero-rise flex flex-wrap items-center gap-2" style={delay(0)}>
+          <span className="font-mono text-xs uppercase tracking-[0.14em] text-accent">
+            [0xBF // QUANT_CORE]
+          </span>
+          <span className="font-mono text-xs uppercase tracking-[0.12em] text-muted">
+            Machine learning trading sprint
+          </span>
+        </div>
         <h1 className="mt-5 flex flex-wrap items-baseline gap-x-[0.22em] font-display text-[clamp(4.75rem,19vw,13rem)] font-extrabold uppercase leading-[0.82]">
           <span className="hero-rise" style={delay(80)}>
-            Big
+            <DecipherText text="Big" autoStart={true} delayMs={100} />
           </span>
           <span className="hero-drop text-down" style={delay(300)}>
-            Short
+            <DecipherText text="Short" autoStart={true} delayMs={400} />
           </span>
         </h1>
         <p className="hero-rise mt-8 max-w-xl text-lg text-muted sm:text-xl" style={delay(460)}>
@@ -154,6 +182,13 @@ function HeroSection() {
           <Link href="/login" className={primaryButton}>
             Log in
           </Link>
+          <span className="font-mono text-xs text-faint">
+            // LIVE PORTAL OPEN
+          </span>
+        </div>
+
+        <div className="hero-rise mt-12" style={delay(650)}>
+          <BruteForceTelemetry stockCode="AERION_X" roundCode="R1" />
         </div>
       </div>
     </section>
@@ -178,22 +213,32 @@ export default function LandingPage() {
 
       <header className="mx-auto flex h-16 max-w-[120rem] items-center justify-between px-6 md:px-10 xl:px-16">
         <span className="flex items-baseline gap-[0.22em] font-display text-2xl font-extrabold uppercase leading-none">
-          <span>Big</span>
-          <span className="text-down">Short</span>
+          <DecipherText text="Big" autoStart={false} />
+          <span className="text-down">
+            <DecipherText text="Short" autoStart={false} />
+          </span>
         </span>
-        <Link href="/login" className="press inline-flex min-h-11 items-center px-2 text-sm text-muted hover:text-text">
-          Log in
-        </Link>
+        <div className="flex items-center gap-3">
+          <BruteForceToggle compact={true} />
+          <Link href="/login" className="press inline-flex min-h-11 items-center px-2 font-mono text-xs text-muted hover:text-text">
+            Log in
+          </Link>
+        </div>
       </header>
 
       <main>
         <HeroSection />
 
-        <Section title="How the five hours play out" intro="Calm, then chaos, then a new game. Durations are approximate.">
+        <Section
+          tag="// TIMELINE_MATRIX"
+          title="How the five hours play out"
+          intro="Calm, then chaos, then a new game. Durations are approximate."
+        >
           <Timeline />
         </Section>
 
         <Section
+          tag="// DATA_SPECIFICATION"
           title="What you upload"
           intro="One CSV per upload. Exactly 50 rows matching the round prediction window (R1: 801–850, R2/R3: 851–900)."
         >
@@ -215,7 +260,11 @@ export default function LandingPage() {
           </div>
         </Section>
 
-        <Section title="How you're scored" intro="Every round is scored out of 100.">
+        <Section
+          tag="// SCORING_ALGORITHM"
+          title="How you're scored"
+          intro="Every round is scored out of 100."
+        >
           <div className="grid gap-12 md:grid-cols-2 md:gap-0 md:divide-x md:divide-line">
             <Reveal className="md:pr-12">
               <h3 className="font-display text-5xl font-extrabold uppercase leading-none text-up sm:text-6xl">
@@ -238,18 +287,29 @@ export default function LandingPage() {
           </div>
         </Section>
 
-        <Section title="Rules that matter on the day" intro="Read these once, then forget them.">
+        <Section
+          tag="// PROTOCOL_RULES"
+          title="Rules that matter on the day"
+          intro="Read these once, then forget them."
+        >
           <RulesList />
         </Section>
 
-        <Section title="Field guide" intro="Terms you will hear a lot.">
+        <Section
+          tag="// KNOWLEDGE_BASE"
+          title="Field guide"
+          intro="Terms you will hear a lot."
+        >
           <FieldGuide />
         </Section>
 
         <section className="border-t border-line">
           <div className="mx-auto flex max-w-[120rem] flex-col items-start gap-10 px-6 md:px-10 xl:px-16 py-24 sm:py-32">
             <Reveal>
-              <h2 className="font-display text-6xl font-extrabold uppercase leading-[0.85] sm:text-8xl">
+              <span className="font-mono text-xs uppercase tracking-wider text-accent">
+                // SYSTEM_READY
+              </span>
+              <h2 className="mt-2 font-display text-6xl font-extrabold uppercase leading-[0.85] sm:text-8xl">
                 Ready for the open?
               </h2>
             </Reveal>
