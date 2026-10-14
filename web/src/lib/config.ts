@@ -1,3 +1,5 @@
+import type { SubmissionType } from "./types";
+
 const PREDICTION_ROWS = 50;
 
 function numberFromEnv(value: string | undefined, fallback: number): number {
