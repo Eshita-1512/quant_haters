@@ -1,6 +1,7 @@
 import Head from "next/head";
 import { useCallback, useState, type FormEvent } from "react";
 import AdminLeaderboard from "@/components/admin/AdminLeaderboard";
+import IntegrityPanel from "@/components/admin/IntegrityPanel";
 import FlashCrashControl from "@/components/admin/FlashCrashControl";
 import ResultsControls from "@/components/admin/ResultsControls";
 import RoundControls from "@/components/admin/RoundControls";
@@ -278,6 +279,10 @@ function AdminConsole({ user }: { user: string }) {
 
             <Panel title="Leaderboard">
               <AdminLeaderboard currentRound={status.current_round} />
+            </Panel>
+
+            <Panel title="Integrity">
+              <IntegrityPanel currentRound={status.current_round} />
             </Panel>
           </>
         )}

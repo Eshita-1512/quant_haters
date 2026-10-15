@@ -10,11 +10,22 @@ import type {
   EventStatus,
   FinalBacktestResult,
   FlashCrashRequest,
+  IntegrityApplyRequest,
+  IntegrityApplyResult,
+  IntegrityResults,
+  IntegrityRunRequest,
+  IntegrityStatus,
+  IntegritySubmission,
+  IntegrityTeam,
+  IntegrityThresholds,
   RoundCode,
   RoundPhase,
+  ScoreAdjustment,
+  ScoreAdjustmentRequest,
   SnapshotResult,
   StartRoundRequest,
   SubmissionType,
+  TeamNoticeRecord,
   TimerRequest,
   UploadSuccess,
 } from "@/lib/types";
@@ -43,7 +54,7 @@ const ROUNDS: RoundDefinition[] = [
   { code: "R3", name: "Round 3: Alpha", minutes: 60, submissionType: "signal" },
 ];
 
-const RIVALS = [
+export const RIVALS = [
   "Mean Reverters", "Alpha Seekers", "Gradient Descent", "Random Walkers", "Sharpe Shooters",
   "Black Swans", "Volatility Smile", "Market Makers", "Long Gamma", "Delta Neutral",
   "Momentum Crew", "Kalman Filters", "Brownian Motion", "Fat Tails", "Order Flow",
@@ -54,7 +65,7 @@ const RIVALS = [
   "Neural Nets", "Ensemble Avengers", "Cross Validators", "Sigma Squad", "Fourier Transformers",
 ];
 
-const TEAM_CODES = Array.from({ length: TOTAL_TEAMS }, (_, i) => `${"ABCDE"[Math.floor(i / 8)]}${String((i % 8) + 1).padStart(2, "0")}`);
+export const TEAM_CODES = Array.from({ length: TOTAL_TEAMS }, (_, i) => `${"ABCDE"[Math.floor(i / 8)]}${String((i % 8) + 1).padStart(2, "0")}`);
 
 type PerRound<T> = Record<RoundCode, T>;
 
@@ -373,6 +384,7 @@ export const mockBackend = {
         assigned_stock: stockFor(team),
         download_available: state.phase !== "scheduled",
         submission_type: round.submissionType,
+        notices: [],
       },
       100,
     );
@@ -527,7 +539,7 @@ export const mockAdminBackend = {
     requireAdmin(token);
     const state = loadState();
     const index = ROUNDS.findIndex((definition) => definition.code === round);
-    const entries: Omit<AdminLeaderboardEntry, "rank">[] = [];
+    const entries: Omit<AdminLeaderboardEntry, "rank" | "penalty" | "adjusted_score" | "private_adjusted_score">[] = [];
     const simulated = index <= state.roundIndex;
     TEAM_CODES.forEach((code, i) => {
       const record = state.teams[code];
@@ -565,8 +577,17 @@ export const mockAdminBackend = {
         last_submission_at: last ? new Date(last).toISOString() : null,
       });
     });
-    entries.sort((a, b) => b.score - a.score);
-    return delay(entries.map((entry, index) => ({ ...entry, rank: index + 1 })), 120);
+    const withPenalties = entries.map((entry) => {
+      const penalty = mockPenaltyFor(round, entry.team_code);
+      return {
+        ...entry,
+        penalty,
+        adjusted_score: mockAdjusted(entry.score, penalty),
+        private_adjusted_score: null,
+      };
+    });
+    withPenalties.sort((a, b) => b.adjusted_score - a.adjusted_score);
+    return delay(withPenalties.map((entry, index) => ({ ...entry, rank: index + 1 })), 120);
   },
 
   async publishSnapshot(token: string | null): Promise<SnapshotResult> {
@@ -592,5 +613,257 @@ export const mockAdminBackend = {
 
   reset() {
     saveState(freshState());
+    resetMockIntegrity();
   },
 };
+
+// ---- Integrity (in memory only: it resets on page reload and on "Reset mock") ----
+
+interface MockIntegrityRun {
+  checkedAt: string;
+  thresholds: IntegrityThresholds;
+  submissions: IntegritySubmission[];
+}
+
+interface MockIntegrityStore {
+  runs: Partial<Record<RoundCode, MockIntegrityRun>>;
+  adjustments: ScoreAdjustment[];
+  notices: TeamNoticeRecord[];
+}
+
+let mockIntegrity: MockIntegrityStore = { runs: {}, adjustments: [], notices: [] };
+
+function resetMockIntegrity() {
+  mockIntegrity = { runs: {}, adjustments: [], notices: [] };
+}
+
+function mockId(prefix: string): string {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function mockAdjusted(score: number, penalty: number): number {
+  if (penalty <= 0) return score;
+  return Math.max(score - penalty, Math.min(score, 0));
+}
+
+function mockPenaltyFor(round: RoundCode, teamCode: string): number {
+  return mockIntegrity.adjustments
+    .filter((item) => item.round === round && item.team_code === teamCode && item.revoked_at === null)
+    .reduce((sum, item) => sum + item.points, 0);
+}
+
+function mockStatusFor(match: number, thresholds: IntegrityThresholds): IntegrityStatus {
+  if (match >= thresholds.flag) return "FLAGGED";
+  if (match >= thresholds.review) return "REVIEW";
+  return "OK";
+}
+
+function mockRun(round: RoundCode, thresholds: IntegrityThresholds): MockIntegrityRun {
+  const checkedAt = new Date().toISOString();
+  const submissions = TEAM_CODES.map((code, index): IntegritySubmission => {
+    const rand = seeded(hashString(`${code}:${round}:integrity`));
+    // Demo spread: the first team copies the look-ahead rule, every 11th team sits in the review band, the rest are honest.
+    const match = index === 0 ? 1 : index % 11 === 3 ? 0.6 + rand() * 0.09 : 0.44 + rand() * 0.14;
+    const rule = { rule_acc: 0.8, agreement: Number(match.toFixed(3)) };
+    return {
+      submission_id: `mock-sub-${code}-${round}`,
+      team_id: code,
+      team_code: code,
+      team_name: RIVALS[index],
+      stock: "STOCK_A",
+      submission_no: 1,
+      submitted_at: checkedAt,
+      public_score: Number((match * 60 + rand() * 10).toFixed(2)),
+      private_score: Number((40 + rand() * 40).toFixed(2)),
+      status: mockStatusFor(match, thresholds),
+      worst_rule: "next_open",
+      worst_agreement: Number(match.toFixed(3)),
+      note: "",
+      rules: { next_open: rule, next_candle: rule, next_flow: rule, next_rsi: rule },
+    };
+  });
+  return { checkedAt, thresholds, submissions };
+}
+
+function mockResults(round: RoundCode): IntegrityResults {
+  const run = mockIntegrity.runs[round];
+  if (!run) return { round, check_run_id: null, checked_at: null, thresholds: null, submissions: [], teams: [] };
+  const teams: IntegrityTeam[] = run.submissions.map((sub) => {
+    const suggested =
+      sub.status === "FLAGGED"
+        ? { points: 20, key: "WARNING_LOOKAHEAD" as const }
+        : sub.status === "REVIEW"
+          ? { points: 10, key: "WARNING_CHECK" as const }
+          : { points: 0, key: null };
+    const active = mockIntegrity.adjustments.find(
+      (item) => item.round === round && item.team_code === sub.team_code && item.kind === "lookahead" && item.revoked_at === null,
+    );
+    const notices = mockIntegrity.notices.filter((item) => item.team_code === sub.team_code);
+    return {
+      team_id: sub.team_id,
+      team_code: sub.team_code,
+      team_name: sub.team_name,
+      status: sub.status,
+      submission_count: 1,
+      submission_no: sub.submission_no,
+      worst_submission_id: sub.submission_id,
+      worst_rule: sub.worst_rule,
+      worst_agreement: sub.worst_agreement,
+      public_score: sub.public_score,
+      private_score: sub.private_score,
+      suggested_points: suggested.points,
+      suggested_message_key: suggested.key,
+      current_adjustment: active ? { id: active.id, points: active.points, created_at: active.created_at } : null,
+      last_notice_at: notices.length ? notices[notices.length - 1].created_at : null,
+    };
+  });
+  const order: Record<IntegrityStatus, number> = { FLAGGED: 0, REVIEW: 1, OK: 2, NO_FILE: 3, NO_TARGETS: 3 };
+  teams.sort((a, b) => order[a.status] - order[b.status] || (b.worst_agreement ?? 0) - (a.worst_agreement ?? 0));
+  return {
+    round,
+    check_run_id: `mock-run-${round}`,
+    checked_at: run.checkedAt,
+    thresholds: run.thresholds,
+    submissions: run.submissions,
+    teams,
+  };
+}
+
+export const mockIntegrityBackend = {
+  async run(token: string | null, payload: IntegrityRunRequest): Promise<IntegrityResults> {
+    requireAdmin(token);
+    if (payload.round === "R3") throw new ApiError("Round 3 is not checked", 400);
+    if (!(payload.rule_min > 0 && payload.rule_min <= 1 && payload.review > 0 && payload.review <= payload.flag && payload.flag <= 1)) {
+      throw new ApiError("Thresholds must be between 0 and 1, with review at or below flag.", 400);
+    }
+    mockIntegrity.runs[payload.round] = mockRun(payload.round, {
+      flag: payload.flag,
+      review: payload.review,
+      rule_min: payload.rule_min,
+    });
+    return delay(mockResults(payload.round), 400);
+  },
+
+  async results(token: string | null, round: RoundCode): Promise<IntegrityResults> {
+    requireAdmin(token);
+    return delay(mockResults(round), 80);
+  },
+
+  async apply(token: string | null, payload: IntegrityApplyRequest): Promise<IntegrityApplyResult> {
+    requireAdmin(token);
+    const run = mockIntegrity.runs[payload.round];
+    if (!run) throw new ApiError(`${payload.round} has no look-ahead check. Run the check first.`, 400);
+    for (const item of payload.items) {
+      if (!run.submissions.some((entry) => entry.team_code === item.team_code)) {
+        throw new ApiError(`Team ${item.team_code} not found.`, 404);
+      }
+      if (!(item.points > 0 && item.points <= 100)) throw new ApiError("Points must be greater than 0 and at most 100.", 400);
+      if (!item.message.trim()) throw new ApiError("Message is required.", 400);
+    }
+    const now = new Date().toISOString();
+    const adjustments: ScoreAdjustment[] = [];
+    const notices: TeamNoticeRecord[] = [];
+    for (const item of payload.items) {
+      const sub = run.submissions.find((entry) => entry.team_code === item.team_code)!;
+      mockIntegrity.adjustments = mockIntegrity.adjustments.map((existing) =>
+        existing.round === payload.round &&
+        existing.team_code === item.team_code &&
+        existing.kind === "lookahead" &&
+        existing.revoked_at === null
+          ? { ...existing, revoked_at: now, revoked_by: "admin" }
+          : existing,
+      );
+      const adjustment: ScoreAdjustment = {
+        id: mockId("adj"),
+        team_code: item.team_code,
+        team_name: sub.team_name,
+        round: payload.round,
+        kind: "lookahead",
+        points: Number(item.points.toFixed(2)),
+        reason: `Look-ahead check: ${sub.status} ${Math.round((sub.worst_agreement ?? 0) * 100)}%`,
+        created_by: "admin",
+        created_at: now,
+        revoked_at: null,
+        revoked_by: null,
+      };
+      const notice: TeamNoticeRecord = {
+        id: mockId("notice"),
+        team_code: item.team_code,
+        team_name: sub.team_name,
+        round: payload.round,
+        message: item.message.trim(),
+        created_by: "admin",
+        created_at: now,
+        acknowledged_at: null,
+      };
+      mockIntegrity.adjustments.push(adjustment);
+      mockIntegrity.notices.push(notice);
+      adjustments.push(adjustment);
+      notices.push(notice);
+    }
+    return delay({ adjustments, notices }, 300);
+  },
+
+  async listAdjustments(token: string | null, round?: RoundCode): Promise<ScoreAdjustment[]> {
+    requireAdmin(token);
+    const rows = mockIntegrity.adjustments.filter((item) => !round || item.round === round);
+    return delay([...rows].reverse(), 80);
+  },
+
+  async createAdjustment(token: string | null, payload: ScoreAdjustmentRequest): Promise<ScoreAdjustment> {
+    requireAdmin(token);
+    if (!(payload.points > 0 && payload.points <= 100)) throw new ApiError("Points must be greater than 0 and at most 100.", 400);
+    const reason = payload.reason.trim();
+    if (!reason) throw new ApiError("Reason is required.", 400);
+    const adjustment: ScoreAdjustment = {
+      id: mockId("adj"),
+      team_code: payload.team_code,
+      team_name: RIVALS[TEAM_CODES.indexOf(payload.team_code)] ?? payload.team_code,
+      round: payload.round,
+      kind: "manual",
+      points: Number(payload.points.toFixed(2)),
+      reason,
+      created_by: "admin",
+      created_at: new Date().toISOString(),
+      revoked_at: null,
+      revoked_by: null,
+    };
+    mockIntegrity.adjustments.push(adjustment);
+    return delay(adjustment, 150);
+  },
+
+  async revokeAdjustment(token: string | null, id: string): Promise<ScoreAdjustment> {
+    requireAdmin(token);
+    const target = mockIntegrity.adjustments.find((item) => item.id === id);
+    if (!target) throw new ApiError("Deduction not found.", 404);
+    if (target.revoked_at) throw new ApiError("This deduction has already been revoked.", 400);
+    target.revoked_at = new Date().toISOString();
+    target.revoked_by = "admin";
+    return delay({ ...target }, 150);
+  },
+
+  async listNotices(token: string | null, teamCode?: string): Promise<TeamNoticeRecord[]> {
+    requireAdmin(token);
+    const rows = mockIntegrity.notices.filter((item) => !teamCode || item.team_code === teamCode);
+    return delay([...rows].reverse(), 80);
+  },
+
+  async createNotice(token: string | null, payload: { team_code: string; message: string }): Promise<TeamNoticeRecord> {
+    requireAdmin(token);
+    const message = payload.message.trim();
+    if (!message) throw new ApiError("Message is required.", 400);
+    const notice: TeamNoticeRecord = {
+      id: mockId("notice"),
+      team_code: payload.team_code,
+      team_name: RIVALS[TEAM_CODES.indexOf(payload.team_code)] ?? payload.team_code,
+      round: null,
+      message,
+      created_by: "admin",
+      created_at: new Date().toISOString(),
+      acknowledged_at: null,
+    };
+    mockIntegrity.notices.push(notice);
+    return delay(notice, 150);
+  },
+};
+

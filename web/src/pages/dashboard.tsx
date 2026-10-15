@@ -10,6 +10,7 @@ import EventOver from "@/components/EventOver";
 import FileUpload from "@/components/FileUpload";
 import FormatHint from "@/components/FormatHint";
 import MarketEventOverlay, { type OverlayStage } from "@/components/MarketEventOverlay";
+import NoticeBanner from "@/components/NoticeBanner";
 import Panel from "@/components/Panel";
 import WaitingRoom from "@/components/WaitingRoom";
 import BruteForceTelemetry from "@/components/BruteForceTelemetry";
@@ -60,7 +61,7 @@ function overlayStageFor(status: EventStatus | null, seconds: number, introSeen:
 
 export default function DashboardPage() {
   const { ready, team } = useRequireAuth();
-  const { status, error, clockOffsetMs } = useEventStatus(ready);
+  const { status, error, clockOffsetMs, refresh } = useEventStatus(ready);
   const introSeen = useIntroSeen();
   const [history, setHistory] = useState<SubmissionRecord[]>([]);
   const [progress, setProgress] = useState<{ round: string; submitted: number; remaining: number } | null>(null);
@@ -169,6 +170,9 @@ export default function DashboardPage() {
       <AppHeader team={team} mode={mode} />
 
       <main className="mx-auto flex max-w-[120rem] flex-col gap-5 px-6 md:px-10 xl:px-16 py-6 sm:py-8">
+        {status?.notices?.[0] && (
+          <NoticeBanner key={status.notices[0].id} notice={status.notices[0]} onAcknowledged={refresh} />
+        )}
         {error && (
           <div role="status" className="rounded-lg border border-warn/40 bg-warn-soft px-4 py-2.5 text-sm text-warn">
             Connection problem: {error} {status ? "Showing the last known state." : "Retrying..."}

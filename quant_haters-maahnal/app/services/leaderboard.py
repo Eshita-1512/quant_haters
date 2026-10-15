@@ -12,6 +12,7 @@ from app.models import (
     LeaderboardSnapshotEntry,
     Round,
     Score,
+    ScoreAdjustment,
     Submission,
     Team,
 )
@@ -28,6 +29,24 @@ from app.schemas.leaderboard import (
 W_R1 = 0.20
 W_R2 = 0.35
 W_R3 = 0.45
+
+
+def penalties_by_team(db: Session, round_id: int) -> dict[uuid.UUID, Decimal]:
+    """Total active deductions per team for one round (look-ahead and manual alike)."""
+    rows = db.execute(
+        select(ScoreAdjustment.team_id, func.sum(ScoreAdjustment.points))
+        .where(ScoreAdjustment.round_id == round_id, ScoreAdjustment.revoked_at.is_(None))
+        .group_by(ScoreAdjustment.team_id)
+    ).all()
+    return {team_id: Decimal(str(total)) for team_id, total in rows}
+
+
+def adjusted(score: Decimal, penalty: Decimal) -> Decimal:
+    """Score after deduction. No penalty leaves the raw score alone; with a penalty a
+    non-negative score is floored at 0, and a negative score is never pushed lower."""
+    if penalty <= 0:
+        return score
+    return max(score - penalty, min(score, Decimal(0)))
 
 
 def _best_scores(round_id: int):
@@ -64,9 +83,14 @@ def _live_rows(db: Session) -> tuple[int | None, list[tuple[uuid.UUID, str, Deci
         .join(best_scores, best_scores.c.team_id == Team.id)
         .outerjoin(submission_counts, submission_counts.c.team_id == Team.id)
         .where(Team.is_active.is_(True))
-        .order_by(best_scores.c.best_score.desc(), Team.team_name.asc())
     )
-    return round_id, list(db.execute(statement).all())
+    penalties = penalties_by_team(db, round_id)
+    rows = [
+        (team_id, team_name, adjusted(score, penalties.get(team_id, Decimal(0))), submissions)
+        for team_id, team_name, score, submissions in db.execute(statement).all()
+    ]
+    rows.sort(key=lambda row: (-row[2], row[1]))
+    return round_id, rows
 
 
 def admin_leaderboard(db: Session, round_code: str | None = None) -> list[AdminLeaderboardEntry]:
@@ -91,6 +115,7 @@ def admin_leaderboard(db: Session, round_code: str | None = None) -> list[AdminL
     )
     statement = (
         select(
+            Team.id,
             Team.team_name,
             Team.team_code,
             best_scores.c.best_score,
@@ -101,22 +126,30 @@ def admin_leaderboard(db: Session, round_code: str | None = None) -> list[AdminL
         .join(best_scores, best_scores.c.team_id == Team.id)
         .outerjoin(submission_stats, submission_stats.c.team_id == Team.id)
         .where(Team.is_active.is_(True))
-        .order_by(best_scores.c.best_score.desc(), Team.team_name.asc())
     )
-    return [
-        AdminLeaderboardEntry(
-            rank=rank,
-            team=team_name,
-            team_code=team_code,
-            score=score,
-            submissions=submissions,
-            last_submission_at=last_submission_at,
-            private_score=Decimal(str(details.get("private_score"))) if details and "private_score" in details else None,
+    penalties = penalties_by_team(db, round_id)
+    rows = []
+    for team_id, team_name, team_code, score, details, submissions, last_submission_at in db.execute(statement).all():
+        penalty = penalties.get(team_id, Decimal(0))
+        private = Decimal(str(details["private_score"])) if details and "private_score" in details else None
+        rows.append(
+            AdminLeaderboardEntry(
+                rank=0,
+                team=team_name,
+                team_code=team_code,
+                score=score,
+                penalty=penalty,
+                adjusted_score=adjusted(score, penalty),
+                submissions=submissions,
+                last_submission_at=last_submission_at,
+                private_score=private,
+                private_adjusted_score=None if private is None else adjusted(private, penalty),
+            )
         )
-        for rank, (team_name, team_code, score, details, submissions, last_submission_at) in enumerate(
-            db.execute(statement).all(), start=1
-        )
-    ]
+    rows.sort(key=lambda entry: (-entry.adjusted_score, entry.team))
+    for rank, entry in enumerate(rows, start=1):
+        entry.rank = rank
+    return rows
 
 
 def cumulative_leaderboard(db: Session) -> list[CumulativeLeaderboardEntry]:
@@ -141,13 +174,14 @@ def cumulative_leaderboard(db: Session) -> list[CumulativeLeaderboardEntry]:
         for row in db.scalars(select(Round)).all()
     }
 
-    # Collect best score per team per round
+    # Collect best score per team per round, after each round's deductions
     scores_by_team: dict[uuid.UUID, dict[str, Decimal]] = {}
     subs_by_team: dict[uuid.UUID, int] = {}
     names_by_team: dict[uuid.UUID, str] = {}
 
     for round_code, round_id in rounds.items():
         best = _best_scores(round_id)
+        penalties = penalties_by_team(db, round_id)
         rows = db.execute(
             select(Team.id, Team.team_name, best.c.best_score)
             .join(best, best.c.team_id == Team.id)
@@ -155,7 +189,9 @@ def cumulative_leaderboard(db: Session) -> list[CumulativeLeaderboardEntry]:
         ).all()
         for team_id, team_name, score in rows:
             names_by_team[team_id] = team_name
-            scores_by_team.setdefault(team_id, {})[round_code] = score
+            scores_by_team.setdefault(team_id, {})[round_code] = adjusted(
+                score, penalties.get(team_id, Decimal(0))
+            )
 
     # Count total submissions across all rounds
     all_subs = db.execute(

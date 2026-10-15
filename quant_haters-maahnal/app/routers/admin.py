@@ -225,10 +225,14 @@ def apply_reset_event(
     
     from sqlalchemy import delete
     from app.models import PredictionRow, SignalRow, Score, Submission, SubmissionRateLimit, DownloadEvent, LeaderboardSnapshotEntry, LeaderboardSnapshot
+    from app.models import LookaheadResult, ScoreAdjustment, TeamNotice
 
     db.execute(delete(PredictionRow))
     db.execute(delete(SignalRow))
     db.execute(delete(Score))
+    db.execute(delete(LookaheadResult))
+    db.execute(delete(ScoreAdjustment))
+    db.execute(delete(TeamNotice))
     db.execute(delete(SubmissionRateLimit))
     db.execute(delete(Submission))
     db.execute(delete(DownloadEvent))

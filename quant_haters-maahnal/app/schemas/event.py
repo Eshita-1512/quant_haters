@@ -8,6 +8,12 @@ class StatusStock(BaseModel):
     name: str
 
 
+class TeamNoticeOut(BaseModel):
+    id: str
+    message: str
+    created_at: datetime
+
+
 class EventStatus(BaseModel):
     state_version: int
     server_time: datetime
@@ -24,4 +30,5 @@ class EventStatus(BaseModel):
     submissions_count: int = 0
     submissions_remaining: int = 10
     latest_score: float | None = None
+    notices: list[TeamNoticeOut] = []
 

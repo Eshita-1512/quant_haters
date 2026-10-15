@@ -1,6 +1,6 @@
 import { adminEndpoints, config, endpoints, uploadFieldName } from "@/lib/config";
 import { ApiError } from "@/lib/errors";
-import { mockAdminBackend, mockBackend } from "@/lib/mock";
+import { mockAdminBackend, mockBackend, mockIntegrityBackend } from "@/lib/mock";
 import { adminSession, session } from "@/lib/session";
 import type {
   AdminAuthRequest,
@@ -13,11 +13,18 @@ import type {
   EventStatus,
   FinalBacktestResult,
   FlashCrashRequest,
+  IntegrityApplyRequest,
+  IntegrityApplyResult,
+  IntegrityResults,
+  IntegrityRunRequest,
   LeaderboardEntry,
   PublicFinalResults,
   RoundCode,
+  ScoreAdjustment,
+  ScoreAdjustmentRequest,
   SnapshotResult,
   StartRoundRequest,
+  TeamNoticeRecord,
   TimerRequest,
   TokenResponse,
   UploadSuccess,
@@ -222,6 +229,7 @@ const httpApi = {
       method: "PATCH",
       json: { team_name: teamName },
     }),
+  ackNotice: (id: string) => request<{ status: string }>(endpoints.ackNotice(id), { method: "POST" }),
 };
 
 const mockApi: typeof httpApi = {
@@ -243,6 +251,7 @@ const mockApi: typeof httpApi = {
       predict_end: 1250,
       download_available: true,
     })),
+  ackNotice: () => runMock("team", () => ({ status: "success" })),
   updateTeamName: (teamName: string) =>
     runMock("team", () => {
       session.setTeam(teamName);
@@ -260,7 +269,13 @@ const mockApi: typeof httpApi = {
 };
 
 type RawAdminStatus = Omit<AdminStatus, "current_round"> & { current_round: RoundCode | null };
-type RawLeaderboardEntry = Omit<AdminLeaderboardEntry, "score" | "private_score"> & { score: number | string; private_score?: number | string | null };
+type RawLeaderboardEntry = Omit<AdminLeaderboardEntry, "score" | "private_score" | "penalty" | "adjusted_score" | "private_adjusted_score"> & {
+  score: number | string;
+  penalty: number | string;
+  adjusted_score: number | string;
+  private_score?: number | string | null;
+  private_adjusted_score?: number | string | null;
+};
 
 async function getAdminStatus(): Promise<AdminStatus> {
   return checkAdminStatus(await request<RawAdminStatus>(adminEndpoints.status, { scope: "admin" }));
@@ -298,7 +313,10 @@ const httpAdminApi = {
     return entries.map((entry): AdminLeaderboardEntry => ({
       ...entry,
       score: Number(entry.score),
+      penalty: Number(entry.penalty),
+      adjusted_score: Number(entry.adjusted_score),
       private_score: entry.private_score != null ? Number(entry.private_score) : null,
+      private_adjusted_score: entry.private_adjusted_score != null ? Number(entry.private_adjusted_score) : null,
     }));
   },
   publishSnapshot: () => request<SnapshotResult>(adminEndpoints.snapshot, { method: "POST", scope: "admin" }),
@@ -306,6 +324,28 @@ const httpAdminApi = {
     request<FinalBacktestResult>(adminEndpoints.finalBacktest, { method: "POST", scope: "admin", timeoutMs: 60000 }),
   resetEvent: () =>
     request<AdminStatus>(adminEndpoints.reset, { method: "POST", scope: "admin" }),
+  integrityRun: (payload: IntegrityRunRequest) =>
+    request<IntegrityResults>(adminEndpoints.integrityRun, { method: "POST", json: payload, scope: "admin", timeoutMs: 60000 }),
+  integrityResults: (round: RoundCode) =>
+    request<IntegrityResults>(`${adminEndpoints.integrityResults}?round=${encodeURIComponent(round)}`, { scope: "admin" }),
+  integrityApply: (payload: IntegrityApplyRequest) =>
+    request<IntegrityApplyResult>(adminEndpoints.integrityApply, { method: "POST", json: payload, scope: "admin" }),
+  listAdjustments: (round?: RoundCode) =>
+    request<ScoreAdjustment[]>(
+      round ? `${adminEndpoints.integrityAdjustments}?round=${encodeURIComponent(round)}` : adminEndpoints.integrityAdjustments,
+      { scope: "admin" },
+    ),
+  createAdjustment: (payload: ScoreAdjustmentRequest) =>
+    request<ScoreAdjustment>(adminEndpoints.integrityAdjustments, { method: "POST", json: payload, scope: "admin" }),
+  revokeAdjustment: (id: string) =>
+    request<ScoreAdjustment>(adminEndpoints.integrityRevoke(id), { method: "POST", scope: "admin" }),
+  listNotices: (teamCode?: string) =>
+    request<TeamNoticeRecord[]>(
+      teamCode ? `${adminEndpoints.integrityNotices}?team_code=${encodeURIComponent(teamCode)}` : adminEndpoints.integrityNotices,
+      { scope: "admin" },
+    ),
+  createNotice: (payload: { team_code: string; message: string }) =>
+    request<TeamNoticeRecord>(adminEndpoints.integrityNotices, { method: "POST", json: payload, scope: "admin" }),
 };
 
 const mockAdminApi: typeof httpAdminApi = {
@@ -318,6 +358,14 @@ const mockAdminApi: typeof httpAdminApi = {
   publishSnapshot: () => runMock("admin", () => mockAdminBackend.publishSnapshot(adminSession.getToken())),
   runFinalBacktest: () => runMock("admin", () => mockAdminBackend.runFinalBacktest(adminSession.getToken())),
   resetEvent: () => runMock("admin", () => mockAdminBackend.getStatus(adminSession.getToken())),
+  integrityRun: (payload) => runMock("admin", () => mockIntegrityBackend.run(adminSession.getToken(), payload)),
+  integrityResults: (round) => runMock("admin", () => mockIntegrityBackend.results(adminSession.getToken(), round)),
+  integrityApply: (payload) => runMock("admin", () => mockIntegrityBackend.apply(adminSession.getToken(), payload)),
+  listAdjustments: (round) => runMock("admin", () => mockIntegrityBackend.listAdjustments(adminSession.getToken(), round)),
+  createAdjustment: (payload) => runMock("admin", () => mockIntegrityBackend.createAdjustment(adminSession.getToken(), payload)),
+  revokeAdjustment: (id) => runMock("admin", () => mockIntegrityBackend.revokeAdjustment(adminSession.getToken(), id)),
+  listNotices: (teamCode) => runMock("admin", () => mockIntegrityBackend.listNotices(adminSession.getToken(), teamCode)),
+  createNotice: (payload) => runMock("admin", () => mockIntegrityBackend.createNotice(adminSession.getToken(), payload)),
 };
 
 export const api = config.useMocks ? mockApi : httpApi;

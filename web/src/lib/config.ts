@@ -26,6 +26,7 @@ export const endpoints = {
   finalResults: "/api/v1/leaderboard/final-results",
   teamMe: "/api/v1/team/me",
   teamName: "/api/v1/team/name",
+  ackNotice: (id: string) => `/api/v1/team/notices/${encodeURIComponent(id)}/ack`,
 };
 
 export const adminEndpoints = {
@@ -38,9 +39,23 @@ export const adminEndpoints = {
   snapshot: "/api/v1/admin/leaderboard/snapshot",
   finalBacktest: "/api/v1/admin/final-backtest",
   reset: "/api/v1/admin/reset",
+  integrityRun: "/api/v1/admin/integrity/run",
+  integrityResults: "/api/v1/admin/integrity/results",
+  integrityApply: "/api/v1/admin/integrity/apply",
+  integrityAdjustments: "/api/v1/admin/integrity/adjustments",
+  integrityRevoke: (id: string) => `/api/v1/admin/integrity/adjustments/${encodeURIComponent(id)}/revoke`,
+  integrityNotices: "/api/v1/admin/integrity/notices",
 };
 
 export const uploadFieldName = "file";
+
+// Must match WARNING_LOOKAHEAD and WARNING_CHECK in quant_haters-maahnal/app/services/lookahead.py.
+export const integrityMessages = {
+  WARNING_LOOKAHEAD:
+    "Your predictions match a look-ahead pattern: your model appears to be using data from later rows instead of predicting. 20 points have been deducted for this round. Predictions for each row must only use that row and earlier rows.",
+  WARNING_CHECK:
+    "Please make sure your model is not using look-ahead bias. Predictions for each row must only use that row and earlier rows. 10 points have been deducted for this round.",
+} as const;
 
 // R1 prediction timestamps: 801–850
 // R2 prediction timestamps: 851–900
