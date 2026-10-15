@@ -191,27 +191,6 @@ export default function WaitingRoom({ status, team, isStarting = false }: Waitin
             )}
           </form>
         </div>
-
-        {/* Tactical Pre-Flight Telemetry Grid */}
-        <div className="mt-8 grid w-full max-w-xl grid-cols-1 gap-3 sm:grid-cols-3">
-          <div className="rounded-lg border border-line bg-panel/40 p-4 text-left">
-            <span className="font-mono text-[10px] uppercase tracking-wider text-muted">Dataset</span>
-            <p className="mt-1 font-mono text-sm font-semibold text-text">50-Row CSV</p>
-            <p className="mt-1 text-[11px] text-muted">Clean baseline prices</p>
-          </div>
-
-          <div className="rounded-lg border border-line bg-panel/40 p-4 text-left">
-            <span className="font-mono text-[10px] uppercase tracking-wider text-muted">Submissions</span>
-            <p className="mt-1 font-mono text-sm font-semibold text-text">10 Max</p>
-            <p className="mt-1 text-[11px] text-muted">60s cooldown per upload</p>
-          </div>
-
-          <div className="rounded-lg border border-line bg-panel/40 p-4 text-left">
-            <span className="font-mono text-[10px] uppercase tracking-wider text-muted">Scoring Split</span>
-            <p className="mt-1 font-mono text-sm font-semibold text-text">50% Public</p>
-            <p className="mt-1 text-[11px] text-muted">Immediate feedback</p>
-          </div>
-        </div>
       </main>
 
       {/* Bottom Live Market Ticker */}

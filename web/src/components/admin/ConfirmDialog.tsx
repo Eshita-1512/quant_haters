@@ -20,15 +20,23 @@ export default function ConfirmDialog({
   onCancel,
 }: ConfirmDialogProps) {
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const onCancelRef = useRef(onCancel);
+  onCancelRef.current = onCancel;
 
   useEffect(() => {
-    cancelRef.current?.focus();
+    // Only focus cancel button on initial mount if the active element is not an input or textarea
+    const active = document.activeElement;
+    const isTyping = active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement;
+    if (!isTyping) {
+      cancelRef.current?.focus();
+    }
+
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onCancel();
+      if (event.key === "Escape") onCancelRef.current();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onCancel]);
+  }, []);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onCancel}>

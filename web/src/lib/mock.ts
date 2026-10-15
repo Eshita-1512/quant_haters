@@ -370,6 +370,14 @@ export const mockBackend = {
     const round = currentRound(state);
     const now = Date.now();
     const remaining = remainingMs(state);
+    const record = teamRecord(state, team);
+    const best = record.best[round.code];
+    const penalty = mockPenaltyFor(round.code, team);
+    const adjustedScore = best !== null ? mockAdjusted(best, penalty) : null;
+    const notices = mockIntegrity.notices
+      .filter((item) => item.team_code === team && item.acknowledged_at === null)
+      .map((item) => ({ id: item.id, message: item.message, created_at: item.created_at }));
+
     return delay(
       {
         state_version: state.version,
@@ -384,7 +392,8 @@ export const mockBackend = {
         assigned_stock: stockFor(team),
         download_available: state.phase !== "scheduled",
         submission_type: round.submissionType,
-        notices: [],
+        latest_score: adjustedScore,
+        notices,
       },
       100,
     );
@@ -752,19 +761,16 @@ export const mockIntegrityBackend = {
   async apply(token: string | null, payload: IntegrityApplyRequest): Promise<IntegrityApplyResult> {
     requireAdmin(token);
     const run = mockIntegrity.runs[payload.round];
-    if (!run) throw new ApiError(`${payload.round} has no look-ahead check. Run the check first.`, 400);
     for (const item of payload.items) {
-      if (!run.submissions.some((entry) => entry.team_code === item.team_code)) {
-        throw new ApiError(`Team ${item.team_code} not found.`, 404);
-      }
-      if (!(item.points > 0 && item.points <= 100)) throw new ApiError("Points must be greater than 0 and at most 100.", 400);
+      if (!(item.points >= 0 && item.points <= 100)) throw new ApiError("Points must be between 0 and 100.", 400);
       if (!item.message.trim()) throw new ApiError("Message is required.", 400);
     }
     const now = new Date().toISOString();
     const adjustments: ScoreAdjustment[] = [];
     const notices: TeamNoticeRecord[] = [];
     for (const item of payload.items) {
-      const sub = run.submissions.find((entry) => entry.team_code === item.team_code)!;
+      const sub = run?.submissions.find((entry) => entry.team_code === item.team_code);
+      const teamName = sub?.team_name ?? `Team ${item.team_code}`;
       mockIntegrity.adjustments = mockIntegrity.adjustments.map((existing) =>
         existing.round === payload.round &&
         existing.team_code === item.team_code &&
@@ -773,32 +779,36 @@ export const mockIntegrityBackend = {
           ? { ...existing, revoked_at: now, revoked_by: "admin" }
           : existing,
       );
-      const adjustment: ScoreAdjustment = {
-        id: mockId("adj"),
-        team_code: item.team_code,
-        team_name: sub.team_name,
-        round: payload.round,
-        kind: "lookahead",
-        points: Number(item.points.toFixed(2)),
-        reason: `Look-ahead check: ${sub.status} ${Math.round((sub.worst_agreement ?? 0) * 100)}%`,
-        created_by: "admin",
-        created_at: now,
-        revoked_at: null,
-        revoked_by: null,
-      };
+      if (item.points > 0) {
+        const adjustment: ScoreAdjustment = {
+          id: mockId("adj"),
+          team_code: item.team_code,
+          team_name: teamName,
+          round: payload.round,
+          kind: sub ? "lookahead" : "manual",
+          points: Number(item.points.toFixed(2)),
+          reason: sub
+            ? `Look-ahead check: ${sub.status} ${Math.round((sub.worst_agreement ?? 0) * 100)}%`
+            : `Custom deduction: ${item.message.trim().slice(0, 100)}`,
+          created_by: "admin",
+          created_at: now,
+          revoked_at: null,
+          revoked_by: null,
+        };
+        mockIntegrity.adjustments.push(adjustment);
+        adjustments.push(adjustment);
+      }
       const notice: TeamNoticeRecord = {
         id: mockId("notice"),
         team_code: item.team_code,
-        team_name: sub.team_name,
+        team_name: teamName,
         round: payload.round,
         message: item.message.trim(),
         created_by: "admin",
         created_at: now,
         acknowledged_at: null,
       };
-      mockIntegrity.adjustments.push(adjustment);
       mockIntegrity.notices.push(notice);
-      adjustments.push(adjustment);
       notices.push(notice);
     }
     return delay({ adjustments, notices }, 300);

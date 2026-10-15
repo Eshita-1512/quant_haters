@@ -13,7 +13,7 @@ import { useInView } from "@/hooks/useInView";
 const RULES = [
   "10 submissions in total, shared across all three rounds. Plan how you spend them.",
   "One upload per 60 seconds per team.",
-  "Your public score shows as soon as an upload is accepted. It is based on the first 25 of your 50 rows. Leaderboards during the event use public scores; the final ranking uses all 50 rows.",
+  "Rule violations, look-ahead bias, or data leakage will incur strict point deductions applied to your score.",
   "One login per team, given to you by the organizers. Everyone on the team uses it.",
 ];
 
@@ -33,7 +33,7 @@ function Section({
   children,
 }: {
   title: string;
-  intro: string;
+  intro?: string;
   tag?: string;
   children: ReactNode;
 }) {
@@ -47,7 +47,7 @@ function Section({
             </span>
           )}
           <h2 className="font-display text-5xl font-extrabold uppercase leading-[0.9] sm:text-7xl">{title}</h2>
-          <p className="mt-5 max-w-2xl text-lg text-muted">{intro}</p>
+          {intro && <p className="mt-5 max-w-2xl text-lg text-muted">{intro}</p>}
         </Reveal>
         <div className="mt-14">{children}</div>
       </div>
@@ -284,7 +284,6 @@ export default function LandingPage() {
         <Section
           tag="// PROTOCOL_RULES"
           title="Rules that matter on the day"
-          intro="Read these once, then forget them."
         >
           <RulesList />
         </Section>

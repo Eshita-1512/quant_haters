@@ -69,6 +69,8 @@ export default function PublicLeaderboardPage() {
   }, []);
 
   const isFinal = finalResults.status === "success";
+  const hasCumulative = isFinal || cumulativeEntries.length > 0;
+  const effectiveMode = hasCumulative ? mode : "snapshot";
 
   const filteredCumulative = useMemo(() => {
     // Teams with no score in any round are not listed.
@@ -116,8 +118,8 @@ export default function PublicLeaderboardPage() {
             </h1>
             <p className="text-sm text-muted">
               {isFinal
-                ? "Final Backtest completed! Official cumulative standings with Round 1 (20%), Round 2 (35%), and Round 3 (45%) weights."
-                : "Official event standings with weighted round scores. Auto-updates every 10 seconds."}
+                ? "Final Backtest completed! Official final cumulative standings."
+                : "Official event standings. Auto-updates every 10 seconds."}
             </p>
           </div>
 
@@ -141,14 +143,11 @@ export default function PublicLeaderboardPage() {
 
         {isFinal && (
           <div className="rounded-xl border border-gold/40 bg-gold/10 p-4 sm:p-5">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">🏆</span>
-              <div>
-                <h2 className="font-display text-lg font-bold uppercase text-gold">Final Backtest Results Published</h2>
-                <p className="text-xs text-muted">
-                  The final Round 3 backtest has concluded. Below are the official final cumulative rankings (Round 1: 20%, Round 2: 35%, Round 3: 45%).
-                </p>
-              </div>
+            <div>
+              <h2 className="font-display text-lg font-bold uppercase text-gold">Final Backtest Results Published</h2>
+              <p className="text-xs text-muted">
+                The final Round 3 backtest has concluded. Below are the official final cumulative rankings.
+              </p>
             </div>
           </div>
         )}
@@ -156,30 +155,38 @@ export default function PublicLeaderboardPage() {
         <Panel>
           <div className="flex flex-col gap-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setMode("cumulative")}
-                  className={`rounded-lg px-3 py-1.5 font-mono text-xs font-semibold transition-colors ${
-                    mode === "cumulative"
-                      ? "bg-text text-bg"
-                      : "border border-line text-muted hover:border-line-strong hover:text-text"
-                  }`}
-                >
-                  Cumulative Standings (20% R1 + 35% R2 + 45% R3)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMode("snapshot")}
-                  className={`rounded-lg px-3 py-1.5 font-mono text-xs font-semibold transition-colors ${
-                    mode === "snapshot"
-                      ? "bg-text text-bg"
-                      : "border border-line text-muted hover:border-line-strong hover:text-text"
-                  }`}
-                >
-                  Round Snapshot
-                </button>
-              </div>
+              {hasCumulative ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setMode("cumulative")}
+                    className={`rounded-lg px-3 py-1.5 font-mono text-xs font-semibold transition-colors ${
+                      effectiveMode === "cumulative"
+                        ? "bg-text text-bg"
+                        : "border border-line text-muted hover:border-line-strong hover:text-text"
+                    }`}
+                  >
+                    Cumulative Standings
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMode("snapshot")}
+                    className={`rounded-lg px-3 py-1.5 font-mono text-xs font-semibold transition-colors ${
+                      effectiveMode === "snapshot"
+                        ? "bg-text text-bg"
+                        : "border border-line text-muted hover:border-line-strong hover:text-text"
+                    }`}
+                  >
+                    Round Snapshot
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="rounded-lg bg-text px-3 py-1.5 font-mono text-xs font-semibold text-bg">
+                    Round Standings
+                  </span>
+                </div>
+              )}
 
               <div className="flex items-center gap-3">
                 <input
@@ -190,7 +197,7 @@ export default function PublicLeaderboardPage() {
                   className="h-9 w-full max-w-xs rounded-lg border border-line-strong bg-bg px-3 font-mono text-xs outline-none focus:border-accent"
                 />
                 <span className="font-mono text-xs text-muted whitespace-nowrap">
-                  {mode === "cumulative" ? filteredCumulative.length : filteredSnapshot.length} ranked
+                  {effectiveMode === "cumulative" ? filteredCumulative.length : filteredSnapshot.length} ranked
                 </span>
               </div>
             </div>
@@ -205,7 +212,7 @@ export default function PublicLeaderboardPage() {
               <div className="flex h-48 items-center justify-center font-mono text-sm text-muted">
                 Loading standings...
               </div>
-            ) : mode === "cumulative" ? (
+            ) : effectiveMode === "cumulative" ? (
               filteredCumulative.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
                   <p className="font-display text-3xl font-extrabold uppercase">No cumulative standings yet</p>
@@ -226,9 +233,9 @@ export default function PublicLeaderboardPage() {
                       <tr className="border-b border-line font-mono text-[11px] uppercase tracking-wider text-muted">
                         <th className="py-3 px-3 w-16">Rank</th>
                         <th className="py-3 px-3">Team</th>
-                        <th className="py-3 px-3 text-right">R1 (20%)</th>
-                        <th className="py-3 px-3 text-right">R2 (35%)</th>
-                        <th className="py-3 px-3 text-right">R3 (45%)</th>
+                        <th className="py-3 px-3 text-right">R1</th>
+                        <th className="py-3 px-3 text-right">R2</th>
+                        <th className="py-3 px-3 text-right">R3</th>
                         <th className="py-3 px-3 text-right">Submissions</th>
                         <th className="py-3 px-3 text-right">Cumulative Score</th>
                       </tr>

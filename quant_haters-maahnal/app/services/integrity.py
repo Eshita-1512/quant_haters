@@ -69,8 +69,8 @@ def _points(value: float) -> Decimal:
         points = Decimal(str(value)).quantize(Decimal("0.01"))
     except (InvalidOperation, ValueError):
         raise HTTPException(status_code=400, detail="Points must be a number.") from None
-    if not (Decimal("0") < points <= MAX_POINTS):
-        raise HTTPException(status_code=400, detail="Points must be greater than 0 and at most 100.")
+    if not (Decimal("0") <= points <= MAX_POINTS):
+        raise HTTPException(status_code=400, detail="Points must be between 0 and 100.")
     return points
 
 
@@ -302,19 +302,21 @@ def apply_actions(db: Session, admin_id: uuid.UUID, round_code: str, items: list
         points = _points(item.points)
         message = _text(item.message, label="Message", limit=MAX_MESSAGE_LENGTH)
         latest = next(iter(_latest_check_rows(db, round_.id, team.id)), None)
-        if latest is None:
-            raise HTTPException(
-                status_code=400,
-                detail=f"{team.team_code} has no look-ahead check in {round_code}. Run the check first.",
-            )
-        reason = f"Look-ahead check: {latest.status} {_pct(None if latest.worst_agreement is None else float(latest.worst_agreement))}"
-        prepared.append((team, points, message, latest, reason))
+        if latest is not None:
+            reason = f"Look-ahead check: {latest.status} {_pct(None if latest.worst_agreement is None else float(latest.worst_agreement))}"
+            kind = "lookahead"
+            check_run_id = latest.check_run_id
+        else:
+            reason = f"Custom deduction: {message[:100]}"
+            kind = "manual"
+            check_run_id = None
+        prepared.append((team, points, message, latest, reason, kind, check_run_id))
 
     now = datetime.now(UTC)
     try:
         adjustments: list[uuid.UUID] = []
         notices: list[uuid.UUID] = []
-        for team, points, message, latest, reason in prepared:
+        for team, points, message, latest, reason, kind, check_run_id in prepared:
             replaced = _active_lookahead(db, team.id, round_.id)
             replaced_id = None
             if replaced is not None:
@@ -323,18 +325,22 @@ def apply_actions(db: Session, admin_id: uuid.UUID, round_code: str, items: list
                 db.flush()
                 replaced_id = str(replaced.id)
 
-            adjustment = ScoreAdjustment(
-                team_id=team.id,
-                round_id=round_.id,
-                points=points,
-                kind="lookahead",
-                reason=reason,
-                check_run_id=latest.check_run_id,
-                created_by_admin_id=admin_id,
-                created_at=now,
-            )
-            db.add(adjustment)
-            db.flush()
+            adj_id = None
+            if points > 0:
+                adjustment = ScoreAdjustment(
+                    team_id=team.id,
+                    round_id=round_.id,
+                    points=points,
+                    kind=kind,
+                    reason=reason,
+                    check_run_id=check_run_id,
+                    created_by_admin_id=admin_id,
+                    created_at=now,
+                )
+                db.add(adjustment)
+                db.flush()
+                adjustments.append(adjustment.id)
+                adj_id = str(adjustment.id)
 
             notice = TeamNotice(
                 team_id=team.id,
@@ -354,12 +360,11 @@ def apply_actions(db: Session, admin_id: uuid.UUID, round_code: str, items: list
                     "round": round_code,
                     "team_code": team.team_code,
                     "points": str(points),
-                    "adjustment_id": str(adjustment.id),
+                    "adjustment_id": adj_id,
                     "replaced_adjustment_id": replaced_id,
                     "notice_id": str(notice.id),
                 },
             )
-            adjustments.append(adjustment.id)
             notices.append(notice.id)
         db.commit()
     except Exception:

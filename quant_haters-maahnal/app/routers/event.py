@@ -1,5 +1,6 @@
 import uuid
 from datetime import UTC, datetime
+from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, select
@@ -7,9 +8,10 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.dependencies import get_current_team_id
-from app.models import EventState, Round, Score, Stock, Submission, TeamAssignment, TeamNotice
+from app.models import EventState, Round, Score, ScoreAdjustment, Stock, Submission, TeamAssignment, TeamNotice
 from app.schemas.event import EventStatus, StatusStock, TeamNoticeOut
 from app.services.event_control import display_ends_at, effective_round_phase, round_remaining_seconds
+from app.services.leaderboard import adjusted
 from app.services.submissions import TOTAL_SUBMISSIONS_PER_TEAM
 
 
@@ -49,6 +51,19 @@ def get_status(
         .order_by(Submission.created_at.desc())
         .limit(1)
     )
+    penalty_sum = db.scalar(
+        select(func.sum(ScoreAdjustment.points)).where(
+            ScoreAdjustment.team_id == team_id,
+            ScoreAdjustment.round_id == round_.id,
+            ScoreAdjustment.revoked_at.is_(None),
+        )
+    )
+    if latest_score_val is not None:
+        penalty_dec = Decimal(str(penalty_sum)) if penalty_sum is not None else Decimal(0)
+        adjusted_score_val = adjusted(latest_score_val, penalty_dec)
+    else:
+        adjusted_score_val = None
+
     unacknowledged = db.scalars(
         select(TeamNotice)
         .where(TeamNotice.team_id == team_id, TeamNotice.acknowledged_at.is_(None))
@@ -69,7 +84,7 @@ def get_status(
         submission_type=round_.submission_type,
         submissions_count=sub_count,
         submissions_remaining=sub_remaining,
-        latest_score=float(latest_score_val) if latest_score_val is not None else None,
+        latest_score=float(adjusted_score_val) if adjusted_score_val is not None else None,
         notices=[TeamNoticeOut(id=str(n.id), message=n.message, created_at=n.created_at) for n in unacknowledged],
     )
 

@@ -21,6 +21,7 @@ interface IntegrityPanelProps {
 
 type Dialog =
   | { kind: "apply"; team: IntegrityTeam; custom: boolean }
+  | { kind: "manual" }
   | { kind: "all" }
   | { kind: "revoke"; adjustment: ScoreAdjustment }
   | null;
@@ -94,7 +95,7 @@ function ApplyDialog({ round, team, entry, custom, onCancel, onDone }: ApplyDial
 
   const current = team.current_adjustment?.points ?? null;
   const pointsNumber = Number(points);
-  const pointsValid = points.trim() !== "" && Number.isFinite(pointsNumber) && pointsNumber >= 0.5 && pointsNumber <= 100;
+  const pointsValid = points.trim() !== "" && Number.isFinite(pointsNumber) && pointsNumber >= 0 && pointsNumber <= 100;
   const messageText = message.trim();
   const messageValid = messageText.length > 0 && messageText.length <= 1000;
 
@@ -105,7 +106,7 @@ function ApplyDialog({ round, team, entry, custom, onCancel, onDone }: ApplyDial
 
   const confirm = async () => {
     if (!pointsValid) {
-      setError("Points must be between 0.5 and 100.");
+      setError("Points must be between 0 and 100.");
       return;
     }
     if (!messageValid) {
@@ -119,7 +120,11 @@ function ApplyDialog({ round, team, entry, custom, onCancel, onDone }: ApplyDial
         round,
         items: [{ team_code: team.team_code, points: pointsNumber, message: messageText }],
       });
-      onDone(`Sent -${pointsNumber.toFixed(2)} and the message to ${team.team_code}.`);
+      onDone(
+        pointsNumber > 0
+          ? `Sent -${pointsNumber.toFixed(2)} and the message to ${team.team_code}.`
+          : `Sent message to ${team.team_code}.`
+      );
     } catch (err) {
       setError(errorText(err, "Could not apply the deduction."));
       setBusy(false);
@@ -128,7 +133,7 @@ function ApplyDialog({ round, team, entry, custom, onCancel, onDone }: ApplyDial
 
   return (
     <ConfirmDialog
-      title={`Apply deduction to ${team.team_code}?`}
+      title={custom ? `Custom deduction / message to ${team.team_code}` : `Apply deduction to ${team.team_code}?`}
       confirmLabel="Apply deduction and send"
       busy={busy}
       onCancel={onCancel}
@@ -149,15 +154,17 @@ function ApplyDialog({ round, team, entry, custom, onCancel, onDone }: ApplyDial
         </dl>
 
         <label className="flex flex-col gap-1.5">
-          <span className={labelClass}>Points</span>
+          <span className={labelClass}>Points deduction</span>
           <input
             type="number"
-            min={0.5}
+            min={0}
             max={100}
             step={0.5}
             value={points}
+            placeholder="e.g. 10.0"
+            autoFocus={custom}
             onChange={(event) => setPoints(event.target.value)}
-            className="h-10 rounded-lg border border-line-strong bg-bg px-3 font-mono text-sm outline-none focus:border-accent"
+            className="h-10 rounded-lg border border-line-strong bg-bg px-3 font-mono text-sm text-text outline-none focus:border-accent"
           />
         </label>
 
@@ -166,9 +173,10 @@ function ApplyDialog({ round, team, entry, custom, onCancel, onDone }: ApplyDial
           <textarea
             value={message}
             onChange={(event) => setMessage(event.target.value)}
+            placeholder="Type message to the team..."
             maxLength={1000}
             rows={5}
-            className="rounded-lg border border-line-strong bg-bg px-3 py-2 text-sm leading-relaxed outline-none focus:border-accent"
+            className="rounded-lg border border-line-strong bg-bg px-3 py-2 text-sm text-text leading-relaxed outline-none focus:border-accent"
           />
         </label>
 
@@ -179,7 +187,143 @@ function ApplyDialog({ round, team, entry, custom, onCancel, onDone }: ApplyDial
         {current != null && (
           <p className="text-xs text-warn">This replaces the current -{current.toFixed(2)} deduction.</p>
         )}
-        <p className="text-xs text-muted">The team sees only this message.</p>
+        <p className="text-xs text-muted">The team sees only this message in their dashboard banner.</p>
+        {error && (
+          <p role="alert" className={alertClass}>
+            {error}
+          </p>
+        )}
+      </div>
+    </ConfirmDialog>
+  );
+}
+
+interface ManualDialogProps {
+  round: RoundCode;
+  teams: { team_code: string; team_name: string }[];
+  entries: Record<string, AdminLeaderboardEntry>;
+  onCancel: () => void;
+  onDone: (message: string) => void;
+}
+
+function ManualDialog({ round, teams, entries, onCancel, onDone }: ManualDialogProps) {
+  const [selectedCode, setSelectedCode] = useState(teams[0]?.team_code ?? "__custom__");
+  const [customCode, setCustomCode] = useState("");
+  const [points, setPoints] = useState("");
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const teamCode = (selectedCode === "__custom__" ? customCode : selectedCode).trim().toUpperCase();
+  const pointsNumber = Number(points);
+  const pointsValid = points.trim() !== "" && Number.isFinite(pointsNumber) && pointsNumber >= 0 && pointsNumber <= 100;
+  const messageText = message.trim();
+  const messageValid = messageText.length > 0 && messageText.length <= 1000;
+  const entry = entries[teamCode];
+
+  const after = entry && pointsValid ? applyPenalty(entry.adjusted_score, pointsNumber) : null;
+
+  const confirm = async () => {
+    if (!teamCode) {
+      setError("Please select or enter a team code.");
+      return;
+    }
+    if (!pointsValid) {
+      setError("Points must be between 0 and 100.");
+      return;
+    }
+    if (!messageValid) {
+      setError("Enter the message the team will see (1000 characters or less).");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await adminApi.integrityApply({
+        round,
+        items: [{ team_code: teamCode, points: pointsNumber, message: messageText }],
+      });
+      onDone(
+        pointsNumber > 0
+          ? `Sent -${pointsNumber.toFixed(2)} and the message to ${teamCode}.`
+          : `Sent message to ${teamCode}.`
+      );
+    } catch (err) {
+      setError(errorText(err, "Could not apply the deduction."));
+      setBusy(false);
+    }
+  };
+
+  return (
+    <ConfirmDialog
+      title={`Custom deduction / message (${round})`}
+      confirmLabel="Apply and send"
+      busy={busy}
+      onCancel={onCancel}
+      onConfirm={confirm}
+    >
+      <div className="flex flex-col gap-4">
+        <label className="flex flex-col gap-1.5">
+          <span className={labelClass}>Select Team</span>
+          {teams.length > 0 && (
+            <select
+              value={selectedCode}
+              onChange={(e) => setSelectedCode(e.target.value)}
+              className="h-10 rounded-lg border border-line-strong bg-bg px-3 font-mono text-sm text-text outline-none focus:border-accent"
+            >
+              {teams.map((t) => (
+                <option key={t.team_code} value={t.team_code}>
+                  {t.team_code} - {t.team_name}
+                </option>
+              ))}
+              <option value="__custom__">+ Enter custom team code...</option>
+            </select>
+          )}
+          {(teams.length === 0 || selectedCode === "__custom__") && (
+            <input
+              type="text"
+              placeholder="e.g. A01"
+              value={customCode}
+              onChange={(e) => setCustomCode(e.target.value)}
+              className="h-10 rounded-lg border border-line-strong bg-bg px-3 font-mono text-sm text-text uppercase outline-none focus:border-accent"
+            />
+          )}
+        </label>
+
+        <label className="flex flex-col gap-1.5">
+          <span className={labelClass}>Points deduction</span>
+          <input
+            type="number"
+            min={0}
+            max={100}
+            step={0.5}
+            value={points}
+            placeholder="e.g. 10.0"
+            autoFocus
+            onChange={(event) => setPoints(event.target.value)}
+            className="h-10 rounded-lg border border-line-strong bg-bg px-3 font-mono text-sm text-text outline-none focus:border-accent"
+          />
+        </label>
+
+        <label className="flex flex-col gap-1.5">
+          <span className={labelClass}>Message to the team</span>
+          <textarea
+            value={message}
+            onChange={(event) => setMessage(event.target.value)}
+            placeholder="Type message to the team..."
+            maxLength={1000}
+            rows={4}
+            className="rounded-lg border border-line-strong bg-bg px-3 py-2 text-sm text-text leading-relaxed outline-none focus:border-accent"
+          />
+        </label>
+
+        {entry && (
+          <p className="font-mono text-xs text-text">
+            Round score: {formatScore(entry.adjusted_score)} -&gt; {after == null ? "-" : formatScore(after)}{" "}
+            <span className="text-muted">after deduction</span>
+          </p>
+        )}
+        <p className="text-xs text-muted">The team sees only this message in their dashboard banner.</p>
         {error && (
           <p role="alert" className={alertClass}>
             {error}
@@ -358,6 +502,19 @@ export default function IntegrityPanel({ currentRound }: IntegrityPanelProps) {
     );
   }, [teams, onlyFlagged]);
 
+  const allAvailableTeams = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const t of teams) {
+      map.set(t.team_code, t.team_name);
+    }
+    for (const [code, e] of Object.entries(entries)) {
+      if (!map.has(code)) map.set(code, e.team);
+    }
+    return Array.from(map.entries())
+      .map(([team_code, team_name]) => ({ team_code, team_name }))
+      .sort((a, b) => a.team_code.localeCompare(b.team_code));
+  }, [teams, entries]);
+
   const actionable = teams.filter((team) => team.suggested_points > 0);
   const applyAllItems: IntegrityApplyItem[] = actionable.map((team) => ({
     team_code: team.team_code,
@@ -419,6 +576,14 @@ export default function IntegrityPanel({ currentRound }: IntegrityPanelProps) {
         >
           {running && <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />}
           {running ? "Checking..." : "Run check"}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setDialog({ kind: "manual" })}
+          className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-line-strong bg-panel-2 px-3 text-xs font-semibold text-text transition-colors hover:border-line hover:bg-panel"
+        >
+          + Custom Deduction / Message...
         </button>
 
         <span className="ml-auto font-mono text-xs text-faint">
@@ -615,6 +780,15 @@ export default function IntegrityPanel({ currentRound }: IntegrityPanelProps) {
           team={dialog.team}
           entry={entries[dialog.team.team_code]}
           custom={dialog.custom}
+          onCancel={() => setDialog(null)}
+          onDone={afterAction}
+        />
+      )}
+      {dialog?.kind === "manual" && (
+        <ManualDialog
+          round={round}
+          teams={allAvailableTeams}
+          entries={entries}
           onCancel={() => setDialog(null)}
           onDone={afterAction}
         />

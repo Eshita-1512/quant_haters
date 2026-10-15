@@ -153,7 +153,7 @@ def admin_leaderboard(db: Session, round_code: str | None = None) -> list[AdminL
 
 
 def cumulative_leaderboard(db: Session) -> list[CumulativeLeaderboardEntry]:
-    """Compute weighted cumulative score across R1, R2, R3 for every active team."""
+    """Compute cumulative score across R1, R2, R3 for every active team starting from Round 2 submissions."""
     final_res = public_final_results(db)
     if final_res.status == "success" and final_res.rankings:
         return [
@@ -169,29 +169,46 @@ def cumulative_leaderboard(db: Session) -> list[CumulativeLeaderboardEntry]:
             for r in final_res.rankings
         ]
 
+    # Check if Round 2 (or R3) has any submissions yet
+    r2_id = db.scalar(select(Round.id).where(Round.round_code == "R2"))
+    has_r2_submissions = False
+    if r2_id is not None:
+        has_r2_submissions = (
+            db.scalar(select(func.count(Submission.id)).where(Submission.round_id == r2_id)) or 0
+        ) > 0
+
+    r3_id = db.scalar(select(Round.id).where(Round.round_code == "R3"))
+    has_r3_submissions = False
+    if r3_id is not None:
+        has_r3_submissions = (
+            db.scalar(select(func.count(Submission.id)).where(Submission.round_id == r3_id)) or 0
+        ) > 0
+
+    if not (has_r2_submissions or has_r3_submissions):
+        return []
+
     rounds = {
         row.round_code: row.id
         for row in db.scalars(select(Round)).all()
     }
 
-    # Collect best score per team per round, after each round's deductions
+    # Collect best score per team per round (accounting for active penalties)
     scores_by_team: dict[uuid.UUID, dict[str, Decimal]] = {}
     subs_by_team: dict[uuid.UUID, int] = {}
     names_by_team: dict[uuid.UUID, str] = {}
 
     for round_code, round_id in rounds.items():
         best = _best_scores(round_id)
-        penalties = penalties_by_team(db, round_id)
         rows = db.execute(
             select(Team.id, Team.team_name, best.c.best_score)
             .join(best, best.c.team_id == Team.id)
             .where(Team.is_active.is_(True))
         ).all()
+        penalties = penalties_by_team(db, round_id)
         for team_id, team_name, score in rows:
             names_by_team[team_id] = team_name
-            scores_by_team.setdefault(team_id, {})[round_code] = adjusted(
-                score, penalties.get(team_id, Decimal(0))
-            )
+            adj_score = adjusted(score, penalties.get(team_id, Decimal(0)))
+            scores_by_team.setdefault(team_id, {})[round_code] = adj_score
 
     # Count total submissions across all rounds
     all_subs = db.execute(
@@ -203,7 +220,15 @@ def cumulative_leaderboard(db: Session) -> list[CumulativeLeaderboardEntry]:
     for team_id, count in all_subs:
         subs_by_team[team_id] = count
 
-    # Compute cumulative scores: R1: 20%, R2: 35%, R3: 45%
+    # All active teams, even those with no submissions
+    all_teams = db.execute(
+        select(Team.id, Team.team_name).where(Team.is_active.is_(True))
+    ).all()
+    for team_id, team_name in all_teams:
+        names_by_team.setdefault(team_id, team_name)
+        scores_by_team.setdefault(team_id, {})
+
+    # Compute cumulative scores using internal weights: R1: 20%, R2: 35%, R3: 45%
     entries: list[tuple[str, float, Decimal | None, Decimal | None, Decimal | None, int]] = []
     for team_id, name in names_by_team.items():
         team_scores = scores_by_team[team_id]
