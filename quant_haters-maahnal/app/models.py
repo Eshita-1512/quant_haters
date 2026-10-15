@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, CheckConstraint, DateTime, Enum, ForeignKey, ForeignKeyConstraint, Integer, Numeric, String, Text, UniqueConstraint, func
+from sqlalchemy import Boolean, CheckConstraint, DateTime, Enum, ForeignKey, ForeignKeyConstraint, Index, Integer, Numeric, String, Text, UniqueConstraint, func, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -225,3 +225,60 @@ class SubmissionRateLimit(Base):
         ForeignKey("teams.id", ondelete="CASCADE"), primary_key=True
     )
     last_attempt_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class LookaheadResult(TimestampMixin, Base):
+    """One row per submission per integrity check run. Read-only evidence, never a penalty."""
+
+    __tablename__ = "lookahead_results"
+    __table_args__ = (Index("ix_lookahead_results_round_created", "round_id", "created_at"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    check_run_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), index=True)
+    submission_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("submissions.id", ondelete="CASCADE"))
+    team_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("teams.id"))
+    round_id: Mapped[int] = mapped_column(ForeignKey("rounds.id"))
+    status: Mapped[str] = mapped_column(String(20))
+    worst_rule: Mapped[str | None] = mapped_column(String(30))
+    worst_agreement: Mapped[Decimal | None] = mapped_column(Numeric(5, 3))
+    details: Mapped[dict | None] = mapped_column(JSONB)
+    checked_by_admin_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("admin_users.id"))
+
+
+class ScoreAdjustment(TimestampMixin, Base):
+    """A point deduction. Penalties are applied at read time; the scores table is never changed."""
+
+    __tablename__ = "score_adjustments"
+    __table_args__ = (
+        CheckConstraint("points > 0", name="ck_score_adjustments_points_positive"),
+        CheckConstraint("kind IN ('lookahead', 'manual')", name="ck_score_adjustments_kind"),
+        CheckConstraint("char_length(reason) <= 500", name="ck_score_adjustments_reason_length"),
+        Index(
+            "uq_score_adjustments_active_lookahead",
+            "team_id",
+            "round_id",
+            unique=True,
+            postgresql_where=text("kind = 'lookahead' AND revoked_at IS NULL"),
+        ),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    team_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("teams.id"))
+    round_id: Mapped[int] = mapped_column(ForeignKey("rounds.id"))
+    points: Mapped[Decimal] = mapped_column(Numeric(8, 2))
+    kind: Mapped[str] = mapped_column(String(20))
+    reason: Mapped[str] = mapped_column(Text)
+    check_run_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    created_by_admin_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("admin_users.id"))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    revoked_by_admin_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("admin_users.id"))
+
+
+class TeamNotice(TimestampMixin, Base):
+    """A message shown to one team. The team sees the text only, never the reason or the points."""
+
+    __tablename__ = "team_notices"
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    team_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("teams.id"), index=True)
+    round_id: Mapped[int | None] = mapped_column(ForeignKey("rounds.id"))
+    message: Mapped[str] = mapped_column(Text)
+    created_by_admin_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("admin_users.id"))
+    acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

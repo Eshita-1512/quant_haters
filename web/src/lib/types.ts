@@ -26,6 +26,12 @@ export interface AssignedStock {
   name: string;
 }
 
+export interface TeamNotice {
+  id: string;
+  message: string;
+  created_at: string;
+}
+
 export interface EventStatus {
   state_version: number;
   server_time: string;
@@ -42,6 +48,7 @@ export interface EventStatus {
   submissions_count?: number;
   submissions_remaining?: number;
   latest_score?: number | null;
+  notices: TeamNotice[];
 }
 
 export interface DownloadResponse {
@@ -150,9 +157,12 @@ export interface AdminLeaderboardEntry {
   team: string;
   team_code: string;
   score: number;
+  penalty: number;
+  adjusted_score: number;
   submissions: number;
   last_submission_at: string | null;
   private_score?: number | null;
+  private_adjusted_score?: number | null;
 }
 
 export interface SnapshotResult {
@@ -181,4 +191,124 @@ export interface FinalBacktestResult {
 export interface PublicFinalResults {
   status: "success" | "pending";
   rankings: FinalResultsEntry[];
+}
+
+export type IntegrityStatus = "FLAGGED" | "REVIEW" | "OK" | "NO_FILE" | "NO_TARGETS";
+
+export type IntegrityMessageKey = "WARNING_LOOKAHEAD" | "WARNING_CHECK";
+
+export interface IntegrityThresholds {
+  flag: number;
+  review: number;
+  rule_min: number;
+}
+
+export interface IntegrityRuleResult {
+  rule_acc: number | null;
+  agreement: number | null;
+}
+
+export interface IntegritySubmission {
+  submission_id: string;
+  team_id: string;
+  team_code: string;
+  team_name: string;
+  stock: string;
+  submission_no: number;
+  submitted_at: string;
+  public_score: number;
+  private_score: number | null;
+  status: IntegrityStatus;
+  worst_rule: string | null;
+  worst_agreement: number | null;
+  note: string;
+  rules: Record<string, IntegrityRuleResult>;
+}
+
+export interface IntegrityCurrentAdjustment {
+  id: string;
+  points: number;
+  created_at: string;
+}
+
+export interface IntegrityTeam {
+  team_id: string;
+  team_code: string;
+  team_name: string;
+  status: IntegrityStatus;
+  submission_count: number;
+  submission_no: number;
+  worst_submission_id: string;
+  worst_rule: string | null;
+  worst_agreement: number | null;
+  public_score: number;
+  private_score: number | null;
+  suggested_points: number;
+  suggested_message_key: IntegrityMessageKey | null;
+  current_adjustment: IntegrityCurrentAdjustment | null;
+  last_notice_at: string | null;
+}
+
+export interface IntegrityResults {
+  round: RoundCode;
+  check_run_id: string | null;
+  checked_at: string | null;
+  thresholds: IntegrityThresholds | null;
+  submissions: IntegritySubmission[];
+  teams: IntegrityTeam[];
+}
+
+export interface IntegrityRunRequest {
+  round: RoundCode;
+  flag: number;
+  review: number;
+  rule_min: number;
+}
+
+export interface IntegrityApplyItem {
+  team_code: string;
+  points: number;
+  message: string;
+}
+
+export interface IntegrityApplyRequest {
+  round: RoundCode;
+  items: IntegrityApplyItem[];
+}
+
+export interface ScoreAdjustment {
+  id: string;
+  team_code: string;
+  team_name: string;
+  round: RoundCode;
+  kind: "lookahead" | "manual";
+  points: number;
+  reason: string;
+  created_by: string;
+  created_at: string;
+  revoked_at: string | null;
+  revoked_by: string | null;
+}
+
+export interface ScoreAdjustmentRequest {
+  team_code: string;
+  round: RoundCode;
+  points: number;
+  reason: string;
+}
+
+export interface TeamNoticeRecord {
+  id: string;
+  team_code: string;
+  team_name: string;
+  round: RoundCode | null;
+  message: string;
+  created_by: string;
+  created_at: string;
+  acknowledged_at: string | null;
+}
+
+export interface IntegrityApplyResult {
+  adjustments: ScoreAdjustment[];
+  notices: TeamNoticeRecord[];
 }

@@ -41,6 +41,9 @@ class AdminLeaderboardEntry(LeaderboardEntry):
     team_code: str
     last_submission_at: datetime | None
     private_score: Decimal | None = None
+    penalty: Decimal = Decimal(0)
+    adjusted_score: Decimal
+    private_adjusted_score: Decimal | None = None
 
 
 class SnapshotResult(BaseModel):

@@ -8,6 +8,7 @@ from app.routers.event import router as event_router
 from app.routers.leaderboard import router as leaderboard_router
 from app.routers.submissions import router as submissions_router
 from app.routers.admin import router as admin_router
+from app.routers.integrity import router as integrity_router
 
 
 def create_app() -> FastAPI:
@@ -25,6 +26,7 @@ def create_app() -> FastAPI:
     app.include_router(leaderboard_router, prefix="/api/v1")
     app.include_router(submissions_router, prefix="/api/v1")
     app.include_router(admin_router, prefix="/api/v1")
+    app.include_router(integrity_router, prefix="/api/v1")
 
     @app.on_event("startup")
     def startup_checks() -> None:

@@ -11,8 +11,8 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.dependencies import get_current_team_id, get_current_team_profile
-from app.models import DatasetRelease, DownloadEvent, EventState, LeaderboardSnapshotEntry, Team, TeamAssignment
-from app.schemas.team import DatasetDownload, TeamProfile, UpdateTeamNameRequest
+from app.models import DatasetRelease, DownloadEvent, EventState, LeaderboardSnapshotEntry, Team, TeamAssignment, TeamNotice
+from app.schemas.team import DatasetDownload, NoticeAck, TeamProfile, UpdateTeamNameRequest
 from app.config import get_settings
 from app.services.datasets import (
     UnsafeStorageKeyError,
@@ -61,6 +61,21 @@ def update_team_name(
     db.commit()
 
     return get_current_team_profile(team_id=team_id, db=db)
+
+
+@router.post("/notices/{notice_id}/ack", response_model=NoticeAck)
+def acknowledge_notice(
+    notice_id: uuid.UUID,
+    team_id: uuid.UUID = Depends(get_current_team_id),
+    db: Session = Depends(get_db),
+) -> NoticeAck:
+    notice = db.scalar(select(TeamNotice).where(TeamNotice.id == notice_id, TeamNotice.team_id == team_id))
+    if notice is None:
+        raise HTTPException(status_code=404, detail="Notice not found.")
+    if notice.acknowledged_at is None:
+        notice.acknowledged_at = datetime.now(UTC)
+        db.commit()
+    return NoticeAck()
 
 
 def get_download_response(

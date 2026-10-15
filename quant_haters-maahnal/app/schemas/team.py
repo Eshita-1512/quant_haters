@@ -25,3 +25,7 @@ class DatasetDownload(BaseModel):
 
 class UpdateTeamNameRequest(BaseModel):
     team_name: str
+
+
+class NoticeAck(BaseModel):
+    status: str = "success"

@@ -7,8 +7,8 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.dependencies import get_current_team_id
-from app.models import EventState, Round, Score, Stock, Submission, TeamAssignment
-from app.schemas.event import EventStatus, StatusStock
+from app.models import EventState, Round, Score, Stock, Submission, TeamAssignment, TeamNotice
+from app.schemas.event import EventStatus, StatusStock, TeamNoticeOut
 from app.services.event_control import display_ends_at, effective_round_phase, round_remaining_seconds
 from app.services.submissions import TOTAL_SUBMISSIONS_PER_TEAM
 
@@ -49,6 +49,11 @@ def get_status(
         .order_by(Submission.created_at.desc())
         .limit(1)
     )
+    unacknowledged = db.scalars(
+        select(TeamNotice)
+        .where(TeamNotice.team_id == team_id, TeamNotice.acknowledged_at.is_(None))
+        .order_by(TeamNotice.created_at.desc(), TeamNotice.id.desc())
+    ).all()
     return EventStatus(
         state_version=state.state_version,
         server_time=now,
@@ -65,6 +70,7 @@ def get_status(
         submissions_count=sub_count,
         submissions_remaining=sub_remaining,
         latest_score=float(latest_score_val) if latest_score_val is not None else None,
+        notices=[TeamNoticeOut(id=str(n.id), message=n.message, created_at=n.created_at) for n in unacknowledged],
     )
 
 

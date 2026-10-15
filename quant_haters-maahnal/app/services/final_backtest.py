@@ -21,7 +21,7 @@ from app.models import (
     TeamAssignment,
 )
 from app.schemas.admin import FinalBacktestEntry, FinalBacktestResult
-from app.services.leaderboard import W_R1, W_R2, W_R3, _best_scores, publish_final_results
+from app.services.leaderboard import W_R1, W_R2, W_R3, _best_scores, adjusted, penalties_by_team, publish_final_results
 from app.services.scoring import score_signals
 
 
@@ -89,17 +89,25 @@ def run_final_backtest(db: Session, admin_id: uuid.UUID) -> FinalBacktestResult:
     r1_best_map: dict[uuid.UUID, Decimal] = {}
     r2_best_map: dict[uuid.UUID, Decimal] = {}
 
+    # Each round's deductions come off that round's private score (R1, R2) before weighting.
     if "R1" in rounds:
         b1 = _best_scores(rounds["R1"])
+        pen1 = penalties_by_team(db, rounds["R1"])
         for tid, score, details in db.execute(select(b1.c.team_id, b1.c.best_score, b1.c.details)).all():
             priv = details.get("private_score") if details and isinstance(details, dict) else None
-            r1_best_map[tid] = Decimal(str(priv)) if priv is not None else score
+            raw = Decimal(str(priv)) if priv is not None else score
+            r1_best_map[tid] = adjusted(raw, pen1.get(tid, Decimal(0)))
 
     if "R2" in rounds:
         b2 = _best_scores(rounds["R2"])
+        pen2 = penalties_by_team(db, rounds["R2"])
         for tid, score, details in db.execute(select(b2.c.team_id, b2.c.best_score, b2.c.details)).all():
             priv = details.get("private_score") if details and isinstance(details, dict) else None
-            r2_best_map[tid] = Decimal(str(priv)) if priv is not None else score
+            raw = Decimal(str(priv)) if priv is not None else score
+            r2_best_map[tid] = adjusted(raw, pen2.get(tid, Decimal(0)))
+
+    # R3 deductions come off the hidden backtest score.
+    pen3 = penalties_by_team(db, round_three.id)
 
     # Submission counts across all rounds
     all_subs_map: dict[uuid.UUID, int] = {}
@@ -172,6 +180,9 @@ def run_final_backtest(db: Session, admin_id: uuid.UUID) -> FinalBacktestResult:
                 except Exception as exc:
                     # Fallback to normal score if hidden targets missing
                     r3_score = float(candidate.normal_score)
+
+        if r3_score:
+            r3_score = float(adjusted(Decimal(str(r3_score)), pen3.get(team_id, Decimal(0))))
 
         r1 = r1_best_map.get(team_id)
         r2 = r2_best_map.get(team_id)

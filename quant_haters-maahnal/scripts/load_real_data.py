@@ -17,6 +17,7 @@ from app.models import (
     EventState,
     LeaderboardSnapshot,
     LeaderboardSnapshotEntry,
+    LookaheadResult,
     PredictionRow,
     Round,
     RoundPhase,
@@ -25,8 +26,10 @@ from app.models import (
     Stock,
     Submission,
     SubmissionRateLimit,
+    ScoreAdjustment,
     Team,
     TeamAssignment,
+    TeamNotice,
     AdminAuditLog,
 )
 from app.security import hash_password
@@ -66,6 +69,9 @@ def load() -> None:
         db.query(PredictionRow).delete()
         db.query(SignalRow).delete()
         db.query(Score).delete()
+        db.query(LookaheadResult).delete()
+        db.query(ScoreAdjustment).delete()
+        db.query(TeamNotice).delete()
         db.query(SubmissionRateLimit).delete()
         db.query(Submission).delete()
         db.query(DownloadEvent).delete()
