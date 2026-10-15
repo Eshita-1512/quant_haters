@@ -27,6 +27,8 @@ const ADMIN_PASSWORD = "admin";
 const ADMIN_TOKEN = "mock-admin";
 const MAX_SUBMISSIONS = 10;
 const TOTAL_TEAMS = 40;
+// Matches the backend's ACCESS_TOKEN_MINUTES default (7 hours).
+const SESSION_SECONDS = 25200;
 
 interface RoundDefinition {
   code: RoundCode;
@@ -348,7 +350,7 @@ export const mockBackend = {
       throw new ApiError("Invalid team ID or password.", 401);
     }
     loadState();
-    return delay({ token: `mock.${team}` });
+    return delay({ token: `mock.${team}`, expiresAt: Date.now() + SESSION_SECONDS * 1000 });
   },
 
   async getStatus(token: string | null): Promise<EventStatus> {
@@ -401,8 +403,9 @@ export const mockBackend = {
     if (!file.name.toLowerCase().endsWith(".csv")) throw new ApiError("Only .csv files are accepted.", 400);
     if (requestedRound !== round.code) throw new ApiError(`Round ${requestedRound.slice(1)} is closed.`, 400);
     if (!isOpen(state)) throw new ApiError(`Round ${roundNumber} is closed.`, 400);
-    if (record.submissions[round.code] >= MAX_SUBMISSIONS) {
-      throw new ApiError(`Submission limit (${MAX_SUBMISSIONS}) reached for this round.`, 400);
+    const totalSubmitted = Object.values(record.submissions).reduce((sum, n) => sum + (n ?? 0), 0);
+    if (totalSubmitted >= MAX_SUBMISSIONS) {
+      throw new ApiError(`Submission limit (${MAX_SUBMISSIONS} total across all rounds) reached.`, 400);
     }
     const text = await file.text();
     const error = validateCsv(text, round.submissionType);
@@ -422,7 +425,7 @@ export const mockBackend = {
       team_id: team,
       round: roundNumber,
       submission_number: submissionNumber,
-      submissions_remaining: MAX_SUBMISSIONS - submissionNumber,
+      submissions_remaining: MAX_SUBMISSIONS - totalSubmitted - 1,
     };
   },
 };
@@ -434,7 +437,7 @@ export const mockAdminBackend = {
       throw new ApiError("Invalid admin credentials.", 401);
     }
     loadState();
-    return delay({ token: ADMIN_TOKEN });
+    return delay({ token: ADMIN_TOKEN, expiresAt: Date.now() + SESSION_SECONDS * 1000 });
   },
 
   async getStatus(token: string | null): Promise<AdminStatus> {

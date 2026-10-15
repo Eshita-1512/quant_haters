@@ -37,7 +37,7 @@ export default function ConfirmDialog({
         aria-modal="true"
         aria-labelledby="confirm-title"
         onClick={(event) => event.stopPropagation()}
-        className="crash-in w-full max-w-md border border-line-strong bg-panel p-6"
+        className="crash-in w-full max-w-md rounded-lg border border-line-strong bg-panel p-6"
       >
         <h2 id="confirm-title" className={`text-lg font-semibold ${tone === "danger" ? "text-down" : ""}`}>
           {title}
@@ -48,7 +48,7 @@ export default function ConfirmDialog({
             ref={cancelRef}
             type="button"
             onClick={onCancel}
-            className="h-10 border border-line-strong px-4 text-sm text-muted transition-colors hover:text-text"
+            className="h-10 rounded-lg border border-line-strong px-4 text-sm text-muted transition-colors hover:text-text"
           >
             Cancel
           </button>
@@ -56,7 +56,7 @@ export default function ConfirmDialog({
             type="button"
             onClick={onConfirm}
             disabled={busy}
-            className={`h-10 px-4 text-sm font-semibold transition-colors disabled:opacity-60 ${
+            className={`h-10 rounded-lg px-4 text-sm font-semibold transition-colors disabled:opacity-60 ${
               tone === "danger" ? "bg-down text-white hover:bg-down/90" : "bg-text text-bg hover:bg-text/90"
             }`}
           >

@@ -40,9 +40,10 @@ def validate_submission_csv(content: bytes, *, round_number: int, predict_start:
     reader = csv.DictReader(io.StringIO(text))
     expected = {"timestamp", "signal"} if round_number == 3 else {"timestamp", "prediction"}
     allowed = expected if round_number == 3 else expected | {"confidence"}
-    headers = reader.fieldnames or []
+    headers = [(name or "").strip().lower() for name in (reader.fieldnames or [])]
+    reader.fieldnames = headers
     if len(headers) != len(set(headers)):
-        raise SubmissionValidationError("Invalid CSV schema")
+        raise SubmissionValidationError("Duplicate column names found. Column names are not case-sensitive.")
     if not expected.issubset(headers):
         missing = sorted(expected - set(headers))
         raise SubmissionValidationError(f"Missing columns: {', '.join(missing)}")

@@ -7,9 +7,10 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.dependencies import get_current_team_id
-from app.models import EventState, Round, Stock, Submission, TeamAssignment
+from app.models import EventState, Round, Score, Stock, Submission, TeamAssignment
 from app.schemas.event import EventStatus, StatusStock
 from app.services.event_control import display_ends_at, effective_round_phase, round_remaining_seconds
+from app.services.submissions import TOTAL_SUBMISSIONS_PER_TEAM
 
 
 router = APIRouter(prefix="/event", tags=["event"])
@@ -32,13 +33,22 @@ def get_status(
     now = datetime.now(UTC)
     sub_count = (
         db.scalar(
-            select(func.count(Submission.id)).where(
-                Submission.team_id == team_id, Submission.round_id == round_.id
-            )
+            select(func.count(Submission.id)).where(Submission.team_id == team_id)
         )
         or 0
     )
-    sub_remaining = max(0, round_.max_submissions_per_team - sub_count)
+    sub_remaining = max(0, TOTAL_SUBMISSIONS_PER_TEAM - sub_count)
+    latest_score_val = db.scalar(
+        select(Score.score)
+        .join(Submission, Score.submission_id == Submission.id)
+        .where(
+            Score.team_id == team_id,
+            Score.round_id == round_.id,
+            Score.is_valid.is_(True),
+        )
+        .order_by(Submission.created_at.desc())
+        .limit(1)
+    )
     return EventStatus(
         state_version=state.state_version,
         server_time=now,
@@ -54,6 +64,7 @@ def get_status(
         submission_type=round_.submission_type,
         submissions_count=sub_count,
         submissions_remaining=sub_remaining,
+        latest_score=float(latest_score_val) if latest_score_val is not None else None,
     )
 
 

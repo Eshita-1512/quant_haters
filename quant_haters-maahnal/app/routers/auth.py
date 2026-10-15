@@ -25,17 +25,24 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    token = create_access_token(subject=str(team.id), role="team")
     settings = get_settings()
+    # JWT "exp" is whole seconds, so truncate here to keep the stored expiry identical to the token's.
+    issued_at = datetime.now(UTC).replace(microsecond=0)
+    expires_at = issued_at + timedelta(minutes=settings.access_token_minutes)
+    token = create_access_token(subject=str(team.id), role="team", issued_at=issued_at)
     db.add(
         AuthSession(
             team_id=team.id,
             token_hash=hashlib.sha256(token.encode()).hexdigest(),
-            expires_at=datetime.now(UTC) + timedelta(minutes=settings.access_token_minutes),
+            expires_at=expires_at,
         )
     )
     db.commit()
-    return TokenResponse(access_token=token)
+    return TokenResponse(
+        access_token=token,
+        expires_at=expires_at,
+        expires_in_seconds=settings.access_token_minutes * 60,
+    )
 
 
 @router.post("/admin/login", response_model=TokenResponse)
@@ -43,15 +50,21 @@ def admin_login(payload: AdminLoginRequest, db: Session = Depends(get_db)) -> To
     admin = db.scalar(select(AdminUser).where(AdminUser.username == payload.username))
     if admin is None or not admin.is_active or not verify_password(payload.password, admin.password_hash):
         raise HTTPException(status_code=401, detail="Invalid administrator credentials.")
-    token = create_access_token(subject=str(admin.id), role="admin")
     settings = get_settings()
+    # JWT "exp" is whole seconds, so truncate here to keep the stored expiry identical to the token's.
+    issued_at = datetime.now(UTC).replace(microsecond=0)
+    expires_at = issued_at + timedelta(minutes=settings.access_token_minutes)
+    token = create_access_token(subject=str(admin.id), role="admin", issued_at=issued_at)
     db.add(
         AdminAuthSession(
             admin_id=admin.id,
             token_hash=hashlib.sha256(token.encode()).hexdigest(),
-            expires_at=datetime.now(UTC)
-            + timedelta(minutes=settings.access_token_minutes),
+            expires_at=expires_at,
         )
     )
     db.commit()
-    return TokenResponse(access_token=token)
+    return TokenResponse(
+        access_token=token,
+        expires_at=expires_at,
+        expires_in_seconds=settings.access_token_minutes * 60,
+    )

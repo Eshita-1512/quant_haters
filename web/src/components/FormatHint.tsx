@@ -1,11 +1,11 @@
-import { csvFormats } from "@/lib/config";
+import { getCsvFormat } from "@/lib/config";
 import type { SubmissionType } from "@/lib/types";
 
-export default function FormatHint({ type }: { type: SubmissionType }) {
-  const format = csvFormats[type];
+export default function FormatHint({ type, round }: { type: SubmissionType; round?: string }) {
+  const format = getCsvFormat(type, round);
   return (
     <div className="flex flex-col gap-3">
-      <pre className="overflow-x-auto border border-line bg-bg p-3 font-mono text-xs leading-relaxed">
+      <pre className="overflow-x-auto rounded-lg border border-line bg-bg p-3 font-mono text-xs leading-relaxed">
         <span className="text-accent">{format.header}</span>
         {"\n"}
         <span className="text-muted">{format.example.join("\n")}</span>

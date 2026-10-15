@@ -9,6 +9,7 @@ class SubmissionResult(BaseModel):
     round: int
     submission_number: int
     submissions_remaining: int
+    public_score: float
 
 
 class SubmissionError(BaseModel):

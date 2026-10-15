@@ -25,6 +25,7 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://postgres:${POSTGRES_PASSWORD:-postgres_secure_2026}@db:5432/dz_quant
       JWT_SECRET: ${JWT_SECRET:-e7b4c91a82f34d109f2b84c8a20d75c94e82b7194ad825e68310c839d042bf92}
+      ACCESS_TOKEN_MINUTES: "420"
       CORS_ORIGINS: '["*"]'
       PRIVATE_DATA_DIR: /app/private_data
       MASTER_VALIDATION_PATH: /app/scripts/master_validation.csv

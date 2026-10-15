@@ -98,7 +98,7 @@ export default function FileUpload({
         }}
         onDragLeave={() => setDragging(false)}
         onDrop={onDrop}
-        className={`flex min-h-40 flex-col items-center justify-center gap-2 border-2 border-dashed px-6 py-8 text-center transition-colors ${zoneTone}`}
+        className={`flex min-h-40 flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed px-6 py-8 text-center transition-colors ${zoneTone}`}
       >
         <input
           ref={inputRef}
@@ -115,16 +115,20 @@ export default function FileUpload({
         {disabled ? (
           <p className="text-sm text-muted">{disabledReason}</p>
         ) : file ? (
-          <p className="text-sm">
-            <span className="font-mono text-text">{file.name}</span>
-            <span className="ml-2 text-muted">{formatBytes(file.size)}</span>
-          </p>
+          <div className="flex flex-col items-center gap-1">
+            <p className="text-sm">
+              <span className="font-mono text-text">{file.name}</span>
+              <span className="ml-2 text-muted">{formatBytes(file.size)}</span>
+            </p>
+            <span className="font-mono text-[10px] text-accent">// FILE_READY_FOR_EVALUATION</span>
+          </div>
         ) : (
           <>
             <p className="text-sm text-text">
               Drop your CSV here or <span className="text-accent underline underline-offset-4">browse</span>
             </p>
             <p className="text-xs text-muted">.csv only, up to {formatBytes(config.maxUploadBytes)}</p>
+            <span className="mt-1 font-mono text-[10px] text-faint">[0xBF // 50_ROW_MATRIX_EVAL]</span>
           </>
         )}
       </label>
@@ -134,11 +138,11 @@ export default function FileUpload({
           type="button"
           onClick={submit}
           disabled={!file || disabled || uploading}
-          className={`inline-flex h-11 flex-1 items-center justify-center gap-2 px-5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:bg-line-strong disabled:text-faint bg-up text-bg hover:bg-up/90`}
+          className={`inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-lg px-5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:bg-line-strong disabled:text-faint bg-up text-bg hover:bg-up/90`}
         >
           {uploading ? (
             <>
-              <span className="h-4 w-4 animate-spin round border-2 border-current border-t-transparent" />
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
               Uploading...
             </>
           ) : (
@@ -149,7 +153,7 @@ export default function FileUpload({
           <button
             type="button"
             onClick={clear}
-            className="h-11 border border-line-strong px-4 text-sm text-muted transition-colors hover:text-text"
+            className="h-11 rounded-lg border border-line-strong px-4 text-sm text-muted transition-colors hover:text-text"
           >
             Clear
           </button>
@@ -158,23 +162,46 @@ export default function FileUpload({
 
       <div aria-live="polite">
         {state.kind === "success" && (
-          <div className="border border-up/40 bg-up-soft p-4">
-            <p className="text-sm font-semibold text-up">Submission received</p>
-            <p className="mt-1 text-xs text-muted">Scores stay hidden until the organizers publish the leaderboard.</p>
+          <div className="rounded-lg border border-up/40 bg-up-soft p-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-up">Submission Scored</p>
+              {typeof state.result.public_score === "number" && (
+                <span className="rounded bg-up/20 px-2.5 py-0.5 font-mono text-sm font-bold text-up">
+                  {state.result.public_score.toFixed(2)} pts
+                </span>
+              )}
+            </div>
+
+            {typeof state.result.public_score === "number" ? (
+              <div className="mt-3 rounded-md border border-line bg-panel p-3">
+                <div className="flex items-baseline justify-between">
+                  <span className="font-mono text-xs uppercase tracking-wider text-muted">Your Public Score</span>
+                  <span className="font-mono text-xl font-extrabold text-up">
+                    {state.result.public_score.toFixed(2)} <span className="text-xs text-muted font-normal">/ 100</span>
+                  </span>
+                </div>
+                <p className="mt-1 text-[11px] text-muted">
+                  Evaluated on 50% public test rows. This score determines your rank when organizers publish the leaderboard.
+                </p>
+              </div>
+            ) : (
+              <p className="mt-1 text-xs text-muted">Scores stay hidden until the organizers publish the leaderboard.</p>
+            )}
+
             <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-xs text-muted">
               <div>
                 <dt>Submission</dt>
-                <dd className="tabular text-text">#{state.result.submission_number}</dd>
+                <dd className="tabular text-text">#{state.result.submission_number} of 10</dd>
               </div>
               <div>
-                <dt>Remaining</dt>
+                <dt>Remaining (Total)</dt>
                 <dd className="tabular text-text">{state.result.submissions_remaining}</dd>
               </div>
             </dl>
           </div>
         )}
         {state.kind === "error" && (
-          <div role="alert" className="border border-down/50 bg-down-soft p-4">
+          <div role="alert" className="rounded-lg border border-down/50 bg-down-soft p-4">
             <p className="text-sm font-semibold text-down">Upload rejected</p>
             <p className="mt-1 font-mono text-sm text-text">{state.message}</p>
           </div>

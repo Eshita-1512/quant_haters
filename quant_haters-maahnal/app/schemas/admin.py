@@ -69,6 +69,11 @@ class FinalBacktestEntry(BaseModel):
     rank: int
     team: str
     score: float
+    cumulative_score: float | None = None
+    r1_score: float | None = None
+    r2_score: float | None = None
+    r3_score: float | None = None
+    submissions: int = 0
 
 
 class FinalBacktestResult(BaseModel):

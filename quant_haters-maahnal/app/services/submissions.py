@@ -16,6 +16,9 @@ from app.models import EventState, PredictionRow, Round, Score, SignalRow, Stock
 from app.schemas.submission import SubmissionResult
 from app.services.scoring import score_binary, score_signals
 
+# Total submissions a team may make across ALL rounds combined (not per round).
+TOTAL_SUBMISSIONS_PER_TEAM = 10
+
 
 class SubmissionRateLimitError(Exception):
     def __init__(self, retry_after_seconds: int) -> None:
@@ -144,9 +147,9 @@ async def process_submission(*, file: UploadFile, round_number: int, team_id: uu
     team, round_, assignment, stock = row
     if not (round_.starts_at <= now <= round_.ends_at) or round_.phase.value not in {"live", "flash_crash"}:
         raise SubmissionValidationError(f"Round {round_number} is closed.")
-    count = db.scalar(select(func.count(Submission.id)).where(Submission.team_id == team_id, Submission.round_id == round_.id)) or 0
-    if count >= round_.max_submissions_per_team:
-        raise SubmissionValidationError(f"Submission limit ({round_.max_submissions_per_team}) reached for this round.")
+    count = db.scalar(select(func.count(Submission.id)).where(Submission.team_id == team_id)) or 0
+    if count >= TOTAL_SUBMISSIONS_PER_TEAM:
+        raise SubmissionValidationError(f"Submission limit ({TOTAL_SUBMISSIONS_PER_TEAM} total across all rounds) reached.")
     rows = sorted(validate_submission_csv(content, round_number=round_number, predict_start=assignment.predict_start, predict_end=assignment.predict_end), key=lambda item: item.timestamp)
     submission = Submission(team_id=team_id, round_id=round_.id, stock_id=stock.id, assignment_id=assignment.id, original_filename=file.filename, file_hash=hashlib.sha256(content).hexdigest(), file_size_bytes=len(content), row_count=50, status=SubmissionStatus.SCORING)
     db.add(submission)
@@ -172,4 +175,10 @@ async def process_submission(*, file: UploadFile, round_number: int, team_id: uu
     db.add(score)
     submission.status = SubmissionStatus.SCORED
     db.commit()
-    return SubmissionResult(team_id=team.team_code, round=round_number, submission_number=count + 1, submissions_remaining=round_.max_submissions_per_team - count - 1)
+    return SubmissionResult(
+        team_id=team.team_code,
+        round=round_number,
+        submission_number=count + 1,
+        submissions_remaining=TOTAL_SUBMISSIONS_PER_TEAM - count - 1,
+        public_score=float(result.score),
+    )

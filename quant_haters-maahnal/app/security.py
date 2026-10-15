@@ -1,6 +1,6 @@
 import uuid
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 
 import jwt
 from pwdlib import PasswordHash
@@ -30,9 +30,8 @@ def verify_password(password: str, encoded_hash: str) -> bool:
     return password_hash.verify(password, encoded_hash)
 
 
-def create_access_token(*, subject: str, role: str) -> str:
+def create_access_token(*, subject: str, role: str, issued_at: datetime) -> str:
     settings = get_settings()
-    issued_at = datetime.now(UTC)
     payload = {
         "sub": subject,
         "role": role,

@@ -8,18 +8,22 @@ import type {
   AdminStatus,
   AuthRequest,
   AuthResponse,
+  CumulativeLeaderboardEntry,
   DownloadResponse,
   EventStatus,
   FinalBacktestResult,
   FlashCrashRequest,
   LeaderboardEntry,
+  PublicFinalResults,
   RoundCode,
   SnapshotResult,
   StartRoundRequest,
   TimerRequest,
   TokenResponse,
   UploadSuccess,
+  TeamProfile,
 } from "@/lib/types";
+
 
 export { ApiError };
 
@@ -28,7 +32,7 @@ export const UNAUTHORIZED_EVENT = "qe:unauthorized";
 type Scope = "team" | "admin" | "none";
 
 interface RequestOptions {
-  method?: "GET" | "POST";
+  method?: "GET" | "POST" | "PATCH" | "PUT";
   body?: BodyInit;
   json?: unknown;
   scope?: Scope;
@@ -141,10 +145,28 @@ async function runMock<T>(scope: Scope, fn: () => T | Promise<T>): Promise<T> {
   }
 }
 
+// Reads the "exp" claim (epoch seconds) from a JWT, used only if the server omits expires_in_seconds.
+function expiryFromToken(token: string): number {
+  try {
+    const payload = token.split(".")[1];
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(payload.length / 4) * 4, "=");
+    const claims = JSON.parse(atob(base64)) as { exp?: unknown };
+    if (typeof claims.exp === "number") return claims.exp * 1000;
+  } catch {}
+  throw new ApiError("The server did not return a valid session token.", 0);
+}
+
 async function login(path: string, payload: AuthRequest | AdminAuthRequest): Promise<AuthResponse> {
-  const { access_token } = await request<TokenResponse>(path, { method: "POST", json: payload, scope: "none" });
+  const { access_token, expires_in_seconds } = await request<TokenResponse>(path, {
+    method: "POST",
+    json: payload,
+    scope: "none",
+  });
   if (!access_token) throw new ApiError("The server did not return a session token.", 0);
-  return { token: access_token };
+  // Counted from the moment the response arrives, so a skewed client clock does not shorten or extend the session.
+  const expiresAt =
+    typeof expires_in_seconds === "number" ? Date.now() + expires_in_seconds * 1000 : expiryFromToken(access_token);
+  return { token: access_token, expiresAt };
 }
 
 function roundNumber(round: RoundCode): number {
@@ -179,6 +201,27 @@ const httpApi = {
     );
     return entries.map((entry) => ({ ...entry, score: Number(entry.score) }));
   },
+  getCumulativeLeaderboard: async (): Promise<CumulativeLeaderboardEntry[]> => {
+    const entries = await request<CumulativeLeaderboardEntry[]>(
+      endpoints.cumulativeLeaderboard,
+      { scope: "none" },
+    );
+    return entries.map((e) => ({
+      ...e,
+      cumulative_score: Number(e.cumulative_score),
+      r1_score: e.r1_score != null ? Number(e.r1_score) : null,
+      r2_score: e.r2_score != null ? Number(e.r2_score) : null,
+      r3_score: e.r3_score != null ? Number(e.r3_score) : null,
+    }));
+  },
+  getFinalResults: (): Promise<PublicFinalResults> =>
+    request<PublicFinalResults>(endpoints.finalResults, { scope: "none" }),
+  getMe: () => request<TeamProfile>(endpoints.teamMe),
+  updateTeamName: (teamName: string) =>
+    request<TeamProfile>(endpoints.teamName, {
+      method: "PATCH",
+      json: { team_name: teamName },
+    }),
 };
 
 const mockApi: typeof httpApi = {
@@ -187,6 +230,33 @@ const mockApi: typeof httpApi = {
   getDownload: () => runMock("team", () => mockBackend.getDownload(session.getToken())),
   upload: (file, round) => runMock("team", () => mockBackend.upload(session.getToken(), file, round)),
   getLeaderboard: () => runMock("none", () => []),
+  getCumulativeLeaderboard: () => runMock("none", () => []),
+  getFinalResults: () => runMock("none", () => ({ status: "pending" as const, rankings: [] })),
+  getMe: () =>
+    runMock("team", () => ({
+      team_id: session.getTeam() || "DEMO",
+      team_name: session.getTeam() || "Demo Team",
+      assigned_stock: { code: "STOCK_A", name: "Alpha Corp" },
+      train_start: 1,
+      train_end: 1200,
+      predict_start: 1201,
+      predict_end: 1250,
+      download_available: true,
+    })),
+  updateTeamName: (teamName: string) =>
+    runMock("team", () => {
+      session.setTeam(teamName);
+      return {
+        team_id: session.getTeam() || "DEMO",
+        team_name: teamName,
+        assigned_stock: { code: "STOCK_A", name: "Alpha Corp" },
+        train_start: 1,
+        train_end: 1200,
+        predict_start: 1201,
+        predict_end: 1250,
+        download_available: true,
+      };
+    }),
 };
 
 type RawAdminStatus = Omit<AdminStatus, "current_round"> & { current_round: RoundCode | null };

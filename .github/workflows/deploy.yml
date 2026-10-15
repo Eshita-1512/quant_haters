@@ -24,6 +24,8 @@ jobs:
             cd ~/quant_haters
             git fetch origin main
             git reset --hard origin/main
-            docker compose up -d --build
+            docker container prune -f || true
+            docker ps -a --filter "name=quant_haters-api" -q | xargs -r docker rm -f || true
+            docker compose up -d --build --remove-orphans
             docker compose restart proxy
             docker image prune -f

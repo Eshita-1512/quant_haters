@@ -59,7 +59,7 @@ export default function TimerControls({ status, seconds, busy, run }: TimerContr
           onClick={() =>
             run(paused ? "Resumed timer" : "Paused timer", () => adminApi.timer({ action: paused ? "resume" : "pause" }))
           }
-          className={`inline-flex h-11 w-full items-center justify-center gap-2 px-4 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+          className={`inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
             paused ? "bg-up text-bg hover:bg-up/90" : "bg-warn text-bg hover:bg-warn/90"
           }`}
         >
@@ -87,7 +87,7 @@ export default function TimerControls({ status, seconds, busy, run }: TimerContr
               onClick={() =>
                 run(`Timer ${adjustment.label}`, () => adminApi.timer({ action: "extend", seconds: adjustment.seconds }))
               }
-              className={`h-10 border font-mono text-sm transition-colors disabled:opacity-40 ${
+              className={`h-10 rounded-lg border font-mono text-sm transition-colors disabled:opacity-40 ${
                 adjustment.seconds < 0
                   ? "border-line-strong text-muted hover:border-down hover:text-down"
                   : "border-line-strong text-text hover:border-up hover:text-up"
@@ -102,7 +102,7 @@ export default function TimerControls({ status, seconds, busy, run }: TimerContr
       <form onSubmit={setExact}>
         <p className="mb-2 text-xs text-muted">Set exact time remaining</p>
         <div className="flex gap-2">
-          <label className="flex flex-1 items-center gap-2 border border-line-strong bg-bg px-3 focus-within:border-accent">
+          <label className="flex flex-1 items-center gap-2 rounded-lg border border-line-strong bg-bg px-3 focus-within:border-accent">
             <input
               value={minutes}
               onChange={(event) => setMinutes(event.target.value.replace(/\D/g, "").slice(0, 3))}
@@ -113,7 +113,7 @@ export default function TimerControls({ status, seconds, busy, run }: TimerContr
             />
             <span className="font-mono text-xs text-faint">min</span>
           </label>
-          <label className="flex flex-1 items-center gap-2 border border-line-strong bg-bg px-3 focus-within:border-accent">
+          <label className="flex flex-1 items-center gap-2 rounded-lg border border-line-strong bg-bg px-3 focus-within:border-accent">
             <input
               value={secs}
               onChange={(event) => setSecs(event.target.value.replace(/\D/g, "").slice(0, 2))}
@@ -127,7 +127,7 @@ export default function TimerControls({ status, seconds, busy, run }: TimerContr
           <button
             type="submit"
             disabled={disabled || scheduled || (!minutes && !secs)}
-            className="h-10 bg-text px-4 text-sm font-semibold text-bg transition-colors hover:bg-text/90 disabled:opacity-40"
+            className="h-10 rounded-lg bg-text px-4 text-sm font-semibold text-bg transition-colors hover:bg-text/90 disabled:opacity-40"
           >
             Set
           </button>
@@ -138,7 +138,7 @@ export default function TimerControls({ status, seconds, busy, run }: TimerContr
         type="button"
         disabled={disabled || scheduled || ended}
         onClick={() => setConfirmEnd(true)}
-        className="h-10 border border-down/40 text-sm text-down transition-colors hover:bg-down-soft disabled:opacity-40"
+        className="h-10 rounded-lg border border-down/40 text-sm text-down transition-colors hover:bg-down-soft disabled:opacity-40"
       >
         End {status.current_round} now
       </button>

@@ -11,11 +11,14 @@ export interface AuthRequest {
 
 export interface AuthResponse {
   token: string;
+  expiresAt: number;
 }
 
 export interface TokenResponse {
   access_token: string;
   token_type: string;
+  expires_at: string;
+  expires_in_seconds: number;
 }
 
 export interface AssignedStock {
@@ -38,6 +41,7 @@ export interface EventStatus {
   submission_type: SubmissionType;
   submissions_count?: number;
   submissions_remaining?: number;
+  latest_score?: number | null;
 }
 
 export interface DownloadResponse {
@@ -52,6 +56,18 @@ export interface UploadSuccess {
   round: number;
   submission_number: number;
   submissions_remaining: number;
+  public_score?: number;
+}
+
+export interface TeamProfile {
+  team_id: string;
+  team_name: string;
+  assigned_stock: AssignedStock;
+  train_start: number;
+  train_end: number;
+  predict_start: number;
+  predict_end: number;
+  download_available: boolean;
 }
 
 export interface AdminAuthRequest {
@@ -109,6 +125,26 @@ export interface LeaderboardEntry {
   submissions: number;
 }
 
+export interface CumulativeLeaderboardEntry {
+  rank: number;
+  team: string;
+  cumulative_score: number;
+  r1_score: number | null;
+  r2_score: number | null;
+  r3_score: number | null;
+  submissions: number;
+}
+
+export interface FinalResultsEntry {
+  rank: number;
+  team: string;
+  score: number;
+  r1_score?: number | null;
+  r2_score?: number | null;
+  r3_score?: number | null;
+  submissions?: number;
+}
+
 export interface AdminLeaderboardEntry {
   rank: number;
   team: string;
@@ -129,10 +165,20 @@ export interface FinalBacktestEntry {
   rank: number;
   team: string;
   score: number;
+  cumulative_score?: number;
+  r1_score?: number | null;
+  r2_score?: number | null;
+  r3_score?: number | null;
+  submissions?: number;
 }
 
 export interface FinalBacktestResult {
   status: "success";
   round: "R3";
   rankings: FinalBacktestEntry[];
+}
+
+export interface PublicFinalResults {
+  status: "success" | "pending";
+  rankings: FinalResultsEntry[];
 }

@@ -6,11 +6,13 @@ import AppHeader, { type HeaderMode } from "@/components/AppHeader";
 import CountdownTimer from "@/components/CountdownTimer";
 import CrashHero from "@/components/CrashHero";
 import DownloadButton from "@/components/DownloadButton";
+import EventOver from "@/components/EventOver";
 import FileUpload from "@/components/FileUpload";
 import FormatHint from "@/components/FormatHint";
 import MarketEventOverlay, { type OverlayStage } from "@/components/MarketEventOverlay";
 import Panel from "@/components/Panel";
 import WaitingRoom from "@/components/WaitingRoom";
+import BruteForceTelemetry from "@/components/BruteForceTelemetry";
 import { useCountdown } from "@/hooks/useCountdown";
 import { useEventStatus } from "@/hooks/useEventStatus";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
@@ -23,6 +25,7 @@ interface SubmissionRecord {
   filename: string;
   round: string;
   submissionNumber: number;
+  score?: number;
   at: string;
 }
 
@@ -31,7 +34,7 @@ function uploadBlockReason(status: EventStatus, seconds: number, remaining: numb
     return `Uploads are closed. ${status.round_name} is ${phaseLabels[status.round_phase].toLowerCase()}.`;
   }
   if (seconds <= 0) return `${status.round_name} has ended. Uploads are closed.`;
-  if (remaining !== null && remaining <= 0) return "You have used every submission for this round.";
+  if (remaining !== null && remaining <= 0) return "You have used all 10 submissions across all rounds.";
   return null;
 }
 
@@ -39,8 +42,13 @@ function isCrashRound(status: EventStatus): boolean {
   return status.current_round === "R2" || (status.flash_crash_active && status.current_round !== "R3");
 }
 
+function isEventOver(status: EventStatus | null, seconds: number): boolean {
+  if (!status || status.current_round !== "R3" || status.round_phase === "paused") return false;
+  return status.round_phase === "completed" || (isUploadPhase(status.round_phase) && seconds <= 0);
+}
+
 function overlayStageFor(status: EventStatus | null, seconds: number, introSeen: string | null | undefined): OverlayStage | null {
-  if (!status || introSeen === undefined) return null;
+  if (!status || introSeen === undefined || isEventOver(status, seconds)) return null;
   const roundOver = status.round_phase === "completed" || (isUploadPhase(status.round_phase) && seconds <= 0);
   if (status.current_round === "R3") return introSeen === "R3" ? null : "alpha";
   if (isCrashRound(status)) {
@@ -64,6 +72,7 @@ export default function DashboardPage() {
       : null;
   const seconds = useCountdown(status?.round_ends_at, clockOffsetMs, frozen);
 
+  const eventOver = isEventOver(status, seconds);
   const overlayStage = overlayStageFor(status, seconds, introSeen);
   const mode: HeaderMode =
     !status || overlayStage !== null
@@ -109,6 +118,7 @@ export default function DashboardPage() {
       filename,
       round: status.current_round,
       submissionNumber: result.submission_number,
+      score: result.public_score,
       at: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
     };
     setHistory((previous) => {
@@ -129,9 +139,8 @@ export default function DashboardPage() {
     });
   };
 
-  const roundProgress = status && progress?.round === status.current_round ? progress : null;
-  const remainingThisRound = roundProgress?.remaining ?? status?.submissions_remaining ?? null;
-  const submittedThisRound = roundProgress?.submitted ?? status?.submissions_count ?? null;
+  const remainingTotal = progress?.remaining ?? status?.submissions_remaining ?? null;
+  const submittedTotal = progress?.submitted ?? status?.submissions_count ?? null;
   const roundHistory = status ? history.filter((item) => item.round === status.current_round) : [];
 
   const title =
@@ -161,54 +170,73 @@ export default function DashboardPage() {
 
       <main className="mx-auto flex max-w-[120rem] flex-col gap-5 px-6 md:px-10 xl:px-16 py-6 sm:py-8">
         {error && (
-          <div role="status" className="border border-warn/40 bg-warn-soft px-4 py-2.5 text-sm text-warn">
+          <div role="status" className="rounded-lg border border-warn/40 bg-warn-soft px-4 py-2.5 text-sm text-warn">
             Connection problem: {error} {status ? "Showing the last known state." : "Retrying..."}
           </div>
         )}
 
         {!status ? (
           <div className="grid gap-5">
-            <div className="h-36 animate-pulse border border-line bg-panel" />
+            <div className="h-36 animate-pulse rounded-md border border-line bg-panel" />
             <div className="grid gap-5 lg:grid-cols-3">
-              <div className="h-64 animate-pulse border border-line bg-panel" />
-              <div className="h-64 animate-pulse border border-line bg-panel lg:col-span-2" />
+              <div className="h-64 animate-pulse rounded-md border border-line bg-panel" />
+              <div className="h-64 animate-pulse rounded-md border border-line bg-panel lg:col-span-2" />
             </div>
           </div>
         ) : showWaitingRoom ? (
           <WaitingRoom status={status} team={team} isStarting={waitingExit} />
+        ) : eventOver ? (
+          <EventOver status={status} />
         ) : (
           <>
             {mode === "crash" && <CrashHero message={status.flash_crash_message} />}
             {mode === "alpha" && <AlphaHero status={status} />}
 
-            <Panel className={mode === "crash" ? "border-down/30" : mode === "alpha" ? "border-alpha/25" : ""}>
+            <BruteForceTelemetry
+              stockCode={status.assigned_stock.code}
+              roundCode={status.current_round}
+            />
+
+            <Panel
+              className={mode === "crash" ? "border-down/30" : mode === "alpha" ? "border-alpha/25" : ""}
+              telemetryTag="// SYNC_TIMER"
+            >
               <CountdownTimer status={status} seconds={seconds} />
             </Panel>
 
             <div className="rise-in grid gap-5 lg:grid-cols-3">
               <div className="flex flex-col gap-5">
-                <Panel title="Assigned stock">
+                <Panel title="Assigned stock" telemetryTag="// TARGET_MATRIX">
                   <p className={`font-mono text-3xl font-semibold tracking-tight ${mode === "crash" ? "text-down" : ""}`}>
                     {status.assigned_stock.code}
                   </p>
                   <p className="mt-1 text-sm text-muted">{status.assigned_stock.name}</p>
                 </Panel>
 
-                <Panel title="Upload submission">
+                <Panel title="Dataset download" telemetryTag="// DATA_FEED">
                   <p className="mb-4 text-sm text-muted">Your team&apos;s training and prediction rows for this round.</p>
                   <DownloadButton label="Download dataset" disabled={!status.download_available} />
                   {!status.download_available && <p className="text-xs text-muted">The dataset is not available yet.</p>}
                 </Panel>
 
-                <Panel title="This round">
-                  <dl className="grid grid-cols-2 gap-4">
+                <Panel title="Round standing" telemetryTag="// METRICS">
+                  <dl className="grid grid-cols-3 gap-2">
                     <div>
-                      <dt className="text-xs text-muted">Submitted</dt>
-                      <dd className="tabular mt-1 font-mono text-xl font-semibold">{submittedThisRound ?? "--"}</dd>
+                      <dt className="text-xs text-muted">Total Submitted</dt>
+                      <dd className="tabular mt-1 font-mono text-xl font-semibold">
+                        {submittedTotal ?? "--"}{" "}
+                        <span className="text-xs font-normal text-muted">/ 10</span>
+                      </dd>
                     </div>
                     <div>
-                      <dt className="text-xs text-muted">Submissions left</dt>
-                      <dd className="tabular mt-1 font-mono text-xl font-semibold">{remainingThisRound ?? "--"}</dd>
+                      <dt className="text-xs text-muted">Total Remaining</dt>
+                      <dd className="tabular mt-1 font-mono text-xl font-semibold">{remainingTotal ?? "--"}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs text-muted">Public score</dt>
+                      <dd className="tabular mt-1 font-mono text-xl font-bold text-up">
+                        {typeof status.latest_score === "number" ? `${status.latest_score.toFixed(1)}` : "--"}
+                      </dd>
                     </div>
                   </dl>
                 </Panel>
@@ -216,6 +244,7 @@ export default function DashboardPage() {
 
               <Panel
                 title="Upload submission"
+                telemetryTag="// 50_ROW_EVAL_GATE"
                 aside={<span className="font-mono text-[11px] text-faint">{status.current_round}</span>}
                 className="lg:col-span-2"
               >
@@ -223,13 +252,13 @@ export default function DashboardPage() {
                   <FileUpload
                     key={status.current_round}
                     round={status.current_round}
-                    disabledReason={uploadBlockReason(status, seconds, remainingThisRound)}
+                    disabledReason={uploadBlockReason(status, seconds, remainingTotal)}
                     onSubmitted={onSubmitted}
                     onFileChange={setDraft}
                   />
                   <div>
                     <h3 className="mb-3 text-sm font-medium">Required format</h3>
-                    <FormatHint type={status.submission_type} />
+                    <FormatHint type={status.submission_type} round={status.current_round} />
                   </div>
                 </div>
 
@@ -244,7 +273,12 @@ export default function DashboardPage() {
                           <span className="text-faint">{item.at}</span>
                           <span className="text-muted">{item.round}</span>
                           <span className="truncate text-text">{item.filename}</span>
-                          <span className="tabular ml-auto text-up">#{item.submissionNumber} received</span>
+                          {typeof item.score === "number" && (
+                            <span className="tabular rounded bg-up/10 px-1.5 py-0.5 font-bold text-up">
+                              {item.score.toFixed(1)} pts
+                            </span>
+                          )}
+                          <span className="tabular ml-auto text-up">#{item.submissionNumber}</span>
                         </li>
                       ))}
                     </ul>
@@ -254,7 +288,7 @@ export default function DashboardPage() {
             </div>
 
             {status.submission_type === "signal" && (
-              <section className="rise-in border border-line bg-panel p-5 sm:p-6">
+              <section className="rise-in rounded-lg border border-line bg-panel p-5 sm:p-6">
                 <PositionPreview file={draft} />
               </section>
             )}

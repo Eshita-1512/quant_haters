@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/dz_quant"
     jwt_secret: str = Field(default="development-only-change-me-please", min_length=32)
     jwt_algorithm: str = "HS256"
-    access_token_minutes: int = Field(default=60, gt=0)
+    access_token_minutes: int = Field(default=420, gt=0)
     cors_origins: list[str] = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",

@@ -41,7 +41,7 @@ function Bars({ positions, ghost }: { positions: number[]; ghost?: boolean }) {
             y={long ? mid - h : mid}
             width={bar}
             height={Math.max(1.5, h)}
-
+            rx="1.5"
             fill={fill}
             className={ghost ? "" : "bar-grow"}
             style={{ transformOrigin: `0 ${mid}px`, transformBox: "view-box", animationDelay: `${index * 12}ms` }}
@@ -54,7 +54,7 @@ function Bars({ positions, ghost }: { positions: number[]; ghost?: boolean }) {
 
 function Stat({ label, value, tone = "text-text" }: { label: string; value: string; tone?: string }) {
   return (
-    <div className="border border-line bg-bg/50 px-3 py-2.5">
+    <div className="rounded-lg border border-line bg-bg/50 px-3 py-2.5">
       <dt className="font-mono text-[10px] uppercase tracking-[0.08em] text-muted">{label}</dt>
       <dd className={`tabular mt-1 font-mono text-lg font-semibold ${tone}`}>{value}</dd>
     </div>
@@ -102,7 +102,7 @@ export default function PositionPreview({ file }: PositionPreviewProps) {
           <div className="flex items-center gap-2">
             <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted">Book preview</p>
             {isDemo && (
-              <span className="bg-alpha-soft px-1.5 py-0.5 font-mono text-[10px] text-alpha">Demo sample</span>
+              <span className="rounded bg-alpha-soft px-1.5 py-0.5 font-mono text-[10px] text-alpha">Demo sample</span>
             )}
           </div>
           <p className="mt-1 text-sm text-muted">
@@ -128,25 +128,25 @@ export default function PositionPreview({ file }: PositionPreviewProps) {
           )}
           <div className="flex items-center gap-2.5 font-mono text-[11px] text-muted">
             <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 bg-alpha-2" /> Long
+              <span className="h-2 w-2 rounded-sm bg-alpha-2" /> Long
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 bg-down" /> Short
+              <span className="h-2 w-2 rounded-sm bg-down" /> Short
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 bg-faint" /> Flat
+              <span className="h-2 w-2 rounded-sm bg-faint" /> Flat
             </span>
           </div>
         </div>
       </div>
 
-      <div className="relative h-56 border border-line bg-bg/60 p-3 text-alpha sm:h-64">
+      <div className="relative h-56 rounded-md border border-line bg-bg/60 p-3 text-alpha sm:h-64">
         <span className="absolute left-3 top-2 font-mono text-[10px] text-faint">+1 long</span>
         <span className="absolute bottom-2 left-3 font-mono text-[10px] text-faint">-1 short</span>
         {book ? <Bars key={isDemo ? "demo" : file?.name} positions={book.positions} /> : <Bars positions={GHOST} ghost />}
         {!book && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 p-4 text-center">
-            <p className="border border-line-strong bg-panel/90 px-4 py-1.5 text-xs font-mono text-muted">
+            <p className="rounded-full border border-line-strong bg-panel/90 px-4 py-1.5 text-xs font-mono text-muted">
               {error ?? "Awaiting Signal CSV"}
             </p>
             <p className="text-xs text-faint">

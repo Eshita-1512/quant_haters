@@ -9,7 +9,7 @@ const PLUNGE =
 
 export default function CrashHero({ message }: CrashHeroProps) {
   return (
-    <section className="rise-in relative overflow-hidden border border-down/50 bg-panel">
+    <section className="rise-in relative overflow-hidden rounded-md border border-down/50 bg-panel">
       <svg
         viewBox="0 0 1000 300"
         preserveAspectRatio="none"
@@ -28,7 +28,7 @@ export default function CrashHero({ message }: CrashHeroProps) {
       <div className="relative grid gap-6 p-6 sm:p-8">
         <div>
           <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.12em] text-down">
-            <span className="siren h-2 w-2 round bg-down" />
+            <span className="siren h-2 w-2 rounded-full bg-down" />
             Flash crash in effect
           </div>
           <h2 className="glitch mt-3 text-4xl font-display font-black uppercase tracking-tight text-down sm:text-5xl">FLASH CRASH</h2>

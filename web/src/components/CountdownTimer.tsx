@@ -1,6 +1,7 @@
 import { formatDuration } from "@/hooks/useCountdown";
 import { phaseLabels } from "@/lib/format";
 import type { EventStatus } from "@/lib/types";
+import DecipherText from "@/components/DecipherText";
 
 interface CountdownTimerProps {
   status: EventStatus;
@@ -24,15 +25,18 @@ export default function CountdownTimer({ status, seconds }: CountdownTimerProps)
         <div className="flex items-center gap-2">
           <span className="font-mono text-xs text-muted">{status.current_round}</span>
           <span
-            className={`inline-flex items-center gap-1.5 border px-2 py-0.5 font-mono text-[11px] uppercase tracking-wider ${phaseStyles[status.round_phase]}`}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono text-[11px] uppercase tracking-wider ${phaseStyles[status.round_phase]}`}
           >
             {(status.round_phase === "live" || status.round_phase === "flash_crash") && (
-              <span className="h-1.5 w-1.5 round bg-current" />
+              <span className="h-1.5 w-1.5 rounded-full bg-current" />
             )}
             {phaseLabels[status.round_phase]}
           </span>
+          <span className="font-mono text-[10px] text-faint">[0xBF // SYNCED]</span>
         </div>
-        <h1 className="mt-2 font-display text-4xl font-extrabold uppercase leading-none sm:text-5xl">{status.round_name}</h1>
+        <h1 className="mt-2 font-display text-4xl font-extrabold uppercase leading-none sm:text-5xl">
+          <DecipherText text={status.round_name} autoStart={false} triggerOnHover />
+        </h1>
       </div>
       <div className="sm:text-right">
         <div className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted">

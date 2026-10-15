@@ -56,8 +56,8 @@ function AdminLogin() {
     setSubmitting(true);
     setError(null);
     try {
-      const { token } = await adminApi.login({ username: username.trim(), password });
-      adminSession.save(token, username.trim());
+      const { token, expiresAt } = await adminApi.login({ username: username.trim(), password });
+      adminSession.save(token, username.trim(), expiresAt);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign in failed.");
       setSubmitting(false);
@@ -67,12 +67,12 @@ function AdminLogin() {
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-12">
       <div className="mb-6 flex items-center gap-2">
-        <span className="grid h-8 w-8 place-items-center border border-warn/50 bg-panel font-mono text-sm font-semibold text-warn">
+        <span className="grid h-8 w-8 place-items-center rounded-md border border-warn/50 bg-panel font-mono text-sm font-semibold text-warn">
           A
         </span>
         <span className="font-mono text-xs uppercase tracking-[0.12em] text-muted">Organizer access</span>
       </div>
-      <div className="border border-line bg-panel p-6 sm:p-8">
+      <div className="rounded-lg border border-line bg-panel p-6 sm:p-8">
         <h1 className="text-xl font-semibold">Control room</h1>
         <p className="mt-1 text-sm text-muted">Admins only. Every action here is visible to all teams.</p>
         <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4" noValidate>
@@ -84,7 +84,7 @@ function AdminLogin() {
               autoComplete="username"
               spellCheck={false}
               autoFocus
-              className="h-11 border border-line-strong bg-bg px-3 font-mono text-sm outline-none focus:border-accent"
+              className="h-11 rounded-lg border border-line-strong bg-bg px-3 font-mono text-sm outline-none focus:border-accent"
             />
           </label>
           <label className="flex flex-col gap-1.5">
@@ -94,7 +94,7 @@ function AdminLogin() {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               autoComplete="current-password"
-              className="h-11 border border-line-strong bg-bg px-3 font-mono text-sm outline-none focus:border-accent"
+              className="h-11 rounded-lg border border-line-strong bg-bg px-3 font-mono text-sm outline-none focus:border-accent"
             />
           </label>
           <div aria-live="polite" className="min-h-5">
@@ -103,9 +103,9 @@ function AdminLogin() {
           <button
             type="submit"
             disabled={submitting}
-            className="inline-flex h-11 items-center justify-center gap-2 bg-text text-sm font-semibold text-bg transition-colors hover:bg-text/90 disabled:cursor-wait disabled:bg-line-strong disabled:text-muted"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-text text-sm font-semibold text-bg transition-colors hover:bg-text/90 disabled:cursor-wait disabled:bg-line-strong disabled:text-muted"
           >
-            {submitting && <span className="h-4 w-4 animate-spin round border-2 border-current border-t-transparent" />}
+            {submitting && <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />}
             {submitting ? "Signing in..." : "Open control room"}
           </button>
         </form>
@@ -158,12 +158,12 @@ function AdminConsole({ user }: { user: string }) {
     <>
       <header className="sticky top-0 z-30 border-b border-line bg-bg/85 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-[120rem] items-center gap-4 px-6 md:px-10 xl:px-16">
-          <span className="grid h-7 w-7 place-items-center border border-warn/50 bg-panel font-mono text-xs font-semibold text-warn">
+          <span className="grid h-7 w-7 place-items-center rounded-md border border-warn/50 bg-panel font-mono text-xs font-semibold text-warn">
             A
           </span>
           <span className="text-sm font-semibold tracking-tight">Control room</span>
           {config.useMocks && (
-            <span className="border border-warn/40 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-warn">
+            <span className="rounded-full border border-warn/40 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-warn">
               Mock backend
             </span>
           )}
@@ -177,7 +177,7 @@ function AdminConsole({ user }: { user: string }) {
                   setLog([]);
                   window.dispatchEvent(new Event(STATUS_CHANGED_EVENT));
                 }}
-                className="border border-line-strong px-3 py-1.5 text-xs text-muted transition-colors hover:text-warn"
+                className="rounded-md border border-line-strong px-3 py-1.5 text-xs text-muted transition-colors hover:text-warn"
               >
                 Reset mock
               </button>
@@ -185,7 +185,7 @@ function AdminConsole({ user }: { user: string }) {
             <button
               type="button"
               onClick={() => adminSession.clear()}
-              className="border border-line-strong px-3 py-1.5 text-sm text-muted transition-colors hover:border-down hover:text-down"
+              className="rounded-md border border-line-strong px-3 py-1.5 text-sm text-muted transition-colors hover:border-down hover:text-down"
             >
               Sign out
             </button>
@@ -195,27 +195,27 @@ function AdminConsole({ user }: { user: string }) {
 
       <main className="mx-auto flex max-w-[120rem] flex-col gap-5 px-6 md:px-10 xl:px-16 py-6">
         {(error || actionError) && (
-          <div role="alert" className="border border-down/50 bg-down-soft px-4 py-2.5 text-sm text-down">
+          <div role="alert" className="rounded-lg border border-down/50 bg-down-soft px-4 py-2.5 text-sm text-down">
             {actionError ?? `Connection problem: ${error}`}
           </div>
         )}
 
         {!status ? (
           <div className="grid gap-5">
-            <div className="h-28 animate-pulse border border-line bg-panel" />
+            <div className="h-28 animate-pulse rounded-md border border-line bg-panel" />
             <div className="grid gap-5 lg:grid-cols-3">
               {[0, 1, 2].map((index) => (
-                <div key={index} className="h-80 animate-pulse border border-line bg-panel" />
+                <div key={index} className="h-80 animate-pulse rounded-md border border-line bg-panel" />
               ))}
             </div>
           </div>
         ) : (
           <>
-            <section className="grid gap-4 border border-line bg-panel p-5 md:grid-cols-[1fr_auto] md:items-center">
+            <section className="grid gap-4 rounded-md border border-line bg-panel p-5 md:grid-cols-[1fr_auto] md:items-center">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-mono text-xs text-muted">{status.current_round}</span>
-                  <span className="border border-line-strong px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted">
+                  <span className="rounded-full border border-line-strong px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted">
                     {phaseLabels[status.round_phase]}
                   </span>
                   <span className="font-mono text-[10px] text-faint">state v{status.state_version}</span>
@@ -227,7 +227,7 @@ function AdminConsole({ user }: { user: string }) {
                   <dt className="font-mono text-[10px] uppercase tracking-[0.08em] text-muted">Participants see</dt>
                   <dd className="mt-1">
                     {view && (
-                      <span className={`inline-block border px-2.5 py-1 text-xs font-medium ${view.tone}`}>
+                      <span className={`inline-block rounded-full border px-2.5 py-1 text-xs font-medium ${view.tone}`}>
                         {view.label}
                       </span>
                     )}

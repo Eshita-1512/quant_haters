@@ -42,7 +42,7 @@ export default function RoundControls({ status, busy, run }: RoundControlsProps)
         return (
           <div
             key={round.code}
-            className={`flex flex-col gap-3 border px-3 py-3 ${current ? "border-line-strong bg-panel-2" : "border-line"}`}
+            className={`flex flex-col gap-3 rounded-lg border px-3 py-3 ${current ? "border-line-strong bg-panel-2" : "border-line"}`}
           >
             <div className="flex items-center gap-3">
               <span className="w-7 font-mono text-sm font-semibold">{round.code}</span>
@@ -51,13 +51,13 @@ export default function RoundControls({ status, busy, run }: RoundControlsProps)
                 <p className="text-xs text-muted">{round.submission_type === "signal" ? "Signals" : "Predictions"}</p>
               </div>
               <span
-                className={`shrink-0 border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider ${phaseTone[round.phase]}`}
+                className={`shrink-0 rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider ${phaseTone[round.phase]}`}
               >
                 {phaseLabels[round.phase]}
               </span>
             </div>
             <div className="flex items-center justify-end gap-2">
-              <label className="flex items-center gap-1 border border-line-strong bg-bg px-2 focus-within:border-accent">
+              <label className="flex items-center gap-1 rounded-md border border-line-strong bg-bg px-2 focus-within:border-accent">
                 <input
                   value={minutesFor(round)}
                   onChange={(event) =>
@@ -73,7 +73,7 @@ export default function RoundControls({ status, busy, run }: RoundControlsProps)
                 type="button"
                 disabled={busy !== null}
                 onClick={() => setPending(round)}
-                className="h-8 border border-line-strong px-3 text-xs font-medium transition-colors hover:border-text disabled:opacity-40"
+                className="h-8 rounded-md border border-line-strong px-3 text-xs font-medium transition-colors hover:border-text disabled:opacity-40"
               >
                 {current && round.phase !== "scheduled" ? "Restart" : round.code === "R2" ? "Start + crash" : "Start"}
               </button>
@@ -108,7 +108,7 @@ export default function RoundControls({ status, busy, run }: RoundControlsProps)
               run("Reset Event State", () => adminApi.resetEvent());
             }
           }}
-          className="border border-warn px-3 py-1.5 text-xs text-warn transition-colors hover:bg-warn-soft disabled:opacity-40"
+          className="rounded-md border border-warn px-3 py-1.5 text-xs text-warn transition-colors hover:bg-warn-soft disabled:opacity-40"
         >
           Reset Event State
         </button>
